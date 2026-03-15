@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <circle cx="256" cy="256" r="240" fill="#f5f5f0" stroke="#1e1e24" stroke-width="20"/>
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#1e1e24" stroke-width="2" stroke-dasharray="1, 30"/>
+  
+  <!-- Compass Needle -->
+  <path d="M256 40 L286 256 L256 472 L226 256 Z" fill="#ffde59" stroke="#1e1e24" stroke-width="4"/>
+  <path d="M256 40 L256 256 L226 256 Z" fill="#ff914d" opacity="0.5"/>
+  <path d="M256 472 L256 256 L286 256 Z" fill="#1e1e24" opacity="0.2"/>
+  
+  <!-- Center Pin -->
+  <circle cx="256" cy="256" r="15" fill="#ffde59" stroke="#1e1e24" stroke-width="4"/>
+  
+  <!-- Cardinal Points -->
+  <text x="256" y="90" font-family="Arial Black" font-size="60" text-anchor="middle" fill="#1e1e24">N</text>
+  <text x="256" y="450" font-family="Arial Black" font-size="60" text-anchor="middle" fill="#1e1e24">S</text>
+  <text x="440" y="275" font-family="Arial Black" font-size="60" text-anchor="middle" fill="#1e1e24">E</text>
+  <text x="70" y="275" font-family="Arial Black" font-size="60" text-anchor="middle" fill="#1e1e24">W</text>
+</svg>
