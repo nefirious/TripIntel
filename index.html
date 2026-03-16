@@ -29,29 +29,15 @@
   </head>
   <body>
     <div id="root">
-      <!-- Static content for crawlers -->
-      <header style="padding: 20px; border-bottom: 1px solid #eee; text-align: center;">
-        <h1 style="font-size: 24px; font-weight: bold; text-transform: uppercase;">TripIntel</h1>
-      </header>
-      <main style="max-width: 800px; margin: 0 auto; padding: 40px 20px; text-align: center;">
-        <h2 style="font-size: 48px; font-weight: 900; line-height: 1.1; margin-bottom: 20px;">KNOW BEFORE YOU GO</h2>
-        <p style="font-size: 18px; color: #666; margin-bottom: 30px;">
-          Don't just check the temperature. Discover the real truth about crowds, pricing, and local realities.
-        </p>
-        
-        <section style="margin-top: 60px; text-align: left;">
-          <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 20px;">Trending Destinations</h3>
-          <ul style="list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <li style="padding: 15px; border: 2px solid #000; border-radius: 12px;"><strong>Tokyo, Japan</strong> - Perfect for sightseeing and culture.</li>
-            <li style="padding: 15px; border: 2px solid #000; border-radius: 12px;"><strong>Paris, France</strong> - Iconic landmarks and world-class dining.</li>
-            <li style="padding: 15px; border: 2px solid #000; border-radius: 12px;"><strong>Bali, Indonesia</strong> - Tropical paradise with rich traditions.</li>
-            <li style="padding: 15px; border: 2px solid #000; border-radius: 12px;"><strong>New York City, USA</strong> - The city that never sleeps.</li>
-          </ul>
-        </section>
-      </main>
-      <footer style="padding: 40px; background: #1e1e24; color: white; text-align: center; margin-top: 60px;">
-        <p>© 2026 TripIntel | Unfiltered Travel Intelligence</p>
-      </footer>
+      <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; background: #f9fafb;">
+        <div style="text-align: center;">
+          <h1 style="font-size: 2rem; font-weight: 900; letter-spacing: -0.05em; margin-bottom: 1rem;">TRIPINTEL</h1>
+          <div style="width: 40px; height: 40px; border: 4px solid #ffde59; border-top-color: #1e1e24; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+          <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+          </style>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
