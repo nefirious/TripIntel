@@ -9,6 +9,18 @@ export interface TravelAdvisory {
   sourceUrl?: string;
 }
 
+function extractJson(text: string): any {
+  let cleanJson = text;
+  // Try to find an array block
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    cleanJson = jsonMatch[0];
+  } else {
+    cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  }
+  return JSON.parse(cleanJson);
+}
+
 export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
   const prompt = `Search for the most recent and significant global travel advisories, warnings, or major travel-disrupting news (e.g., strikes, natural disasters, political unrest) from the last 48 hours.
   
@@ -58,14 +70,46 @@ export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
         const response = await Promise.race([responsePromise, timeoutPromise]) as any;
 
         const text = response.text;
-        if (!text) return getFallbackAdvisories();
+        if (!text) throw new Error("Empty response from model");
 
-        // Clean up potential markdown formatting
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanJson) as TravelAdvisory[];
+        return extractJson(text) as TravelAdvisory[];
       } catch (error: any) {
         lastError = error;
         const errorMessage = error.message || JSON.stringify(error);
+        
+        // If it's a 500 error, it might be the googleSearch tool failing.
+        // Let's try one more time without the tool for this model before giving up.
+        if (errorMessage.includes("500") && attempt === 0) {
+          console.warn(`Advisory API returned 500 with tools. Retrying ${model} without tools...`);
+          try {
+            const noToolResponse = await ai.models.generateContent({
+              model: model,
+              contents: prompt + "\n\nIMPORTANT: Do not use external search tools for this specific retry. Use your internal knowledge.",
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      location: { type: Type.STRING },
+                      level: { type: Type.STRING },
+                      message: { type: Type.STRING },
+                    },
+                    required: ["location", "level", "message"]
+                  }
+                }
+              }
+            });
+            const text = noToolResponse.text;
+            if (text) {
+              return extractJson(text) as TravelAdvisory[];
+            }
+          } catch (innerError) {
+            console.error("Safe fallback generation also failed:", innerError);
+          }
+        }
+
         const isRetryable = 
           errorMessage.includes("503") || 
           errorMessage.includes("429") || 

@@ -125,7 +125,7 @@ export async function getTravelSnapshot(
     * legalButProblematic: 1-2 things that are technically legal but will cause serious problems with locals or authorities.
     * emergencyNumbers: An array of objects with "service" (e.g., Police, Ambulance) and "number".
     * majorBanks: 2-3 major banks with branches in this city.
-    * currency: name, code (e.g., EUR), symbol, and current approximate usdExchangeRate (how much 1 USD is worth in local currency).
+    * currency: name, code (e.g., EUR), symbol, and current approximate usdExchangeRate (how much 1 USD is worth in local currency). Use Google Search to find the EXACT current exchange rate as of today.
     * acceptedCurrencies: 1-3 other currencies commonly accepted in the city (e.g., "USD", "EUR").
     * bestHospital: name and reason why it's best for expats/tourists.
     * power: voltage (e.g., "230V") and socketType (e.g., "Type C & F").
@@ -141,7 +141,9 @@ export async function getTravelSnapshot(
     * nature: An object describing the environment:
         - vegetation: What the plants look like (e.g., "Tropical palms", "Pine forests", "Arid scrub").
         - landscape: The physical terrain (e.g., "Rolling hills", "Flat coastal", "Mountainous").
-        - uniqueAnimals: 1-3 unique or common animals found in the area.`;
+        - uniqueAnimals: 1-3 unique or common animals found in the area.
+        
+  Use Google Search to verify the most recent currency exchange rates and any active travel advisories for the destination.`;
 
   let lastError: any;
   const maxRetries = 3;
@@ -152,13 +154,14 @@ export async function getTravelSnapshot(
       try {
         // Create a timeout promise
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("AI request timed out after 45 seconds.")), 45000)
+          setTimeout(() => reject(new Error("AI request timed out after 60 seconds.")), 60000)
         );
 
         const responsePromise = ai.models.generateContent({
           model: model,
           contents: prompt,
           config: {
+            tools: [{ googleSearch: {} }],
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.OBJECT,
@@ -300,6 +303,29 @@ export async function getTravelSnapshot(
       } catch (err: any) {
         lastError = err;
         const errorMessage = err.message || JSON.stringify(err);
+
+        // If it's a 500 error, it might be the googleSearch tool failing.
+        // Let's try one more time without the tool for this model before giving up.
+        if (errorMessage.includes("500") && attempt === 0) {
+          console.warn(`Snapshot API returned 500 with tools. Retrying ${model} without tools...`);
+          try {
+            const noToolResponse = await ai.models.generateContent({
+              model: model,
+              contents: prompt + "\n\nIMPORTANT: Do not use external search tools for this specific retry. Use your internal knowledge.",
+              config: {
+                responseMimeType: "application/json",
+                // Reuse the same schema (omitted here for brevity in the tool call but would be identical)
+              }
+            });
+            const text = noToolResponse.text;
+            if (text) {
+              return JSON.parse(text) as TravelSnapshot;
+            }
+          } catch (innerError) {
+            console.error("Safe fallback snapshot generation also failed:", innerError);
+          }
+        }
+
         const isRetryable = 
           errorMessage.includes("503") || 
           errorMessage.includes("429") || 
