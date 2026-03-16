@@ -125,7 +125,8 @@ export async function getTravelSnapshot(
     * legalButProblematic: 1-2 things that are technically legal but will cause serious problems with locals or authorities.
     * emergencyNumbers: An array of objects with "service" (e.g., Police, Ambulance) and "number".
     * majorBanks: 2-3 major banks with branches in this city.
-    * currency: name, code (e.g., EUR), symbol, and current approximate usdExchangeRate (how much 1 USD is worth in local currency). Use Google Search to find the EXACT current exchange rate as of today.
+    * currency: name, code (e.g., EUR), symbol, and current approximate usdExchangeRate (how much 1 USD is worth in local currency). 
+      CRITICAL: Use Google Search to find the ACTUAL LIVE market exchange rate as of right now. DO NOT project or guess future rates for the year 2026. Use the real-world values found in your search results (e.g., if search says 1 USD = 83 INR, use 83, NOT 92).
     * acceptedCurrencies: 1-3 other currencies commonly accepted in the city (e.g., "USD", "EUR").
     * bestHospital: name and reason why it's best for expats/tourists.
     * power: voltage (e.g., "230V") and socketType (e.g., "Type C & F").
