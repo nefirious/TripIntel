@@ -5,7 +5,7 @@ import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
 import { getTravelSnapshot, TravelSnapshot } from './services/gemini';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
-import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass } from 'lucide-react';
+import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
 
 const FEATURED_CITIES = [
@@ -43,6 +43,7 @@ export default function App() {
   const [activeQueries, setActiveQueries] = useState(1240);
   const [advisories, setAdvisories] = useState<TravelAdvisory[]>([]);
   const [isAdvisoriesLoading, setIsAdvisoriesLoading] = useState(true);
+  const [showCopied, setShowCopied] = useState(false);
 
   useEffect(() => {
     async function fetchAdvisories() {
@@ -73,6 +74,26 @@ export default function App() {
   }, []);
   
   const currentMonth = MONTHS[new Date().getMonth()];
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'TripIntel | Unfiltered Travel Intelligence',
+      text: 'Check out the real truth about travel destinations on TripIntel.',
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShowCopied(true);
+        setTimeout(() => setShowCopied(false), 2000);
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
 
   const handleSearch = async (destination: string, month: string, activity: string = 'General', isSecondCity: boolean = false) => {
     if (isSecondCity) {
@@ -383,6 +404,35 @@ export default function App() {
               <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
               System Status: Operational
             </div>
+          </div>
+        </div>
+
+        {/* Share Section */}
+        <div className="mt-8">
+          <div className="brutal-card bg-[#5ce1e6] p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+            <div className="absolute -left-4 -bottom-4 opacity-10 rotate-12">
+              <Share2 className="w-32 h-32" />
+            </div>
+            <div className="relative z-10 text-center md:text-left">
+              <h4 className="text-3xl font-black uppercase tracking-tighter leading-none mb-2">Spread the Intelligence</h4>
+              <p className="font-bold text-gray-800">Help others discover the unfiltered truth about their next destination.</p>
+            </div>
+            <button 
+              onClick={handleShare}
+              className="relative z-10 flex items-center gap-3 bg-[#ffde59] text-[#1e1e24] px-8 py-4 rounded-xl brutal-border shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all group min-w-[240px] justify-center"
+            >
+              {showCopied ? (
+                <>
+                  <Check className="w-6 h-6" />
+                  <span className="text-lg font-black uppercase tracking-widest">Link Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                  <span className="text-lg font-black uppercase tracking-widest">Share TripIntel</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
