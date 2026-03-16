@@ -43,24 +43,7 @@ export default function App() {
   const [activeQueries, setActiveQueries] = useState(1240);
   const [advisories, setAdvisories] = useState<TravelAdvisory[]>([]);
   const [isAdvisoriesLoading, setIsAdvisoriesLoading] = useState(true);
-  const [trendingCities, setTrendingCities] = useState<{ destination: string; count: number }[]>([]);
 
-  const fetchTrending = async () => {
-    try {
-      const res = await fetch('/api/trending');
-      if (res.ok) {
-        const data = await res.json();
-        setTrendingCities(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch trending cities", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchTrending();
-  }, []);
-  
   useEffect(() => {
     async function fetchAdvisories() {
       setIsAdvisoriesLoading(true);
@@ -111,18 +94,6 @@ export default function App() {
 
     // Scroll to results
     window.scrollTo({ top: 400, behavior: 'smooth' });
-
-    // Log search
-    try {
-      await fetch('/api/log-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ destination }),
-      });
-      fetchTrending();
-    } catch (err) {
-      console.error("Failed to log search", err);
-    }
 
     try {
       const data = await getTravelSnapshot(destination, month, activity);
@@ -291,50 +262,22 @@ export default function App() {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
-                <Sparkles className="w-8 h-8 text-[#ffde59]" /> Trending in {currentMonth}
+                <Sparkles className="w-8 h-8 text-[#ffde59]" /> Featured in {currentMonth}
               </h3>
-              {trendingCities.length > 0 && (
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-400">
-                  Based on last 30 days of searches
-                </div>
-              )}
             </div>
             
-            {trendingCities.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {trendingCities.map((data) => (
-                  <button
-                    key={data.destination}
-                    onClick={() => handleSearch(data.destination, currentMonth)}
-                    className="brutal-card p-6 bg-white hover:bg-[#ffde59]/10 transition-colors text-left group"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="bg-[#ffde59] p-2 rounded-lg brutal-border group-hover:rotate-6 transition-transform">
-                        <MapPin className="w-5 h-5" />
-                      </div>
-                      <div className="text-[10px] font-black uppercase tracking-tighter bg-gray-100 px-2 py-1 rounded border border-gray-200">
-                        {data.count} {data.count === 1 ? 'Search' : 'Searches'}
-                      </div>
-                    </div>
-                    <h4 className="text-xl font-black uppercase tracking-tight leading-none mb-2">{data.destination}</h4>
-                    <p className="text-xs font-bold text-gray-500 uppercase">View Snapshot →</p>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {INITIAL_FEATURED_DATA.map((data) => (
-                  <CityCard 
-                    key={data.city}
-                    city={data.city}
-                    score={data.score}
-                    weatherIcon={data.weatherIcon}
-                    temperature={data.temperature}
-                    onClick={() => handleSearch(data.city, currentMonth)}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {INITIAL_FEATURED_DATA.map((data) => (
+                <CityCard 
+                  key={data.city}
+                  city={data.city}
+                  score={data.score}
+                  weatherIcon={data.weatherIcon}
+                  temperature={data.temperature}
+                  onClick={() => handleSearch(data.city, currentMonth)}
+                />
+              ))}
+            </div>
           </div>
         )}
 
