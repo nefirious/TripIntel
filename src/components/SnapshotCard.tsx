@@ -262,9 +262,12 @@ export function SnapshotCard({ snapshot, destination, month, isCompact = false }
           {/* Health & Safety */}
           {snapshot.healthSafety.length > 0 && (
             <div className="p-3 bg-blue-50 rounded-xl border-2 border-blue-200">
-              <h3 className="font-black uppercase text-[10px] mb-2 flex items-center gap-2 text-blue-600">
-                <ShieldAlert className="w-3 h-3" /> Safety
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-black uppercase text-[10px] flex items-center gap-2 text-blue-600">
+                  <ShieldAlert className="w-3 h-3" /> Safety
+                </h3>
+                <a href="https://safetyindex.net" target="_blank" rel="noreferrer" className="text-[8px] font-black uppercase text-blue-400 hover:text-blue-600 transition-colors">via safetyindex.net</a>
+              </div>
               <ul className="space-y-1">
                 {snapshot.healthSafety.map((item, i) => (
                   <li key={i} className="text-[11px] font-bold leading-tight">🛡️ {item}</li>
@@ -507,9 +510,12 @@ export function SnapshotCard({ snapshot, destination, month, isCompact = false }
 
                 {/* Travel Advisory */}
                 <div className="brutal-card bg-[#fff5f5] p-6 border-[#ff5757]">
-                  <h4 className="font-black uppercase text-sm mb-4 flex items-center gap-2 text-[#ff5757]">
-                    <Flag className="w-5 h-5" /> Official Travel Advisory
-                  </h4>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-black uppercase text-sm flex items-center gap-2 text-[#ff5757]">
+                      <Flag className="w-5 h-5" /> Official Travel Advisory
+                    </h4>
+                    <a href="https://safetyindex.net" target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase text-[#ff5757]/60 hover:text-[#ff5757] transition-colors">Safety Index</a>
+                  </div>
                   <div className="bg-white p-4 brutal-border border-[#ff5757] shadow-[4px_4px_0px_0px_rgba(255,87,87,0.1)]">
                     <p className="text-sm font-black text-[#ff5757] uppercase mb-1">{snapshot.secrets.travelAdvisory.level}</p>
                     <p className="text-xs font-bold text-gray-600 leading-tight">{snapshot.secrets.travelAdvisory.reason}</p>
