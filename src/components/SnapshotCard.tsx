@@ -276,6 +276,23 @@ export function SnapshotCard({ snapshot, destination, month, isCompact = false }
             </div>
           )}
 
+          {/* Emergency Numbers */}
+          {snapshot.secrets.emergencyNumbers.length > 0 && (
+            <div className="p-3 bg-green-50 rounded-xl border-2 border-green-200">
+              <h3 className="font-black uppercase text-[10px] mb-2 flex items-center gap-2 text-green-600">
+                <Phone className="w-3 h-3" /> Emergency
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {snapshot.secrets.emergencyNumbers.map((num, i) => (
+                  <div key={i} className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase text-gray-400 leading-none">{num.service}</span>
+                    <span className="text-xs font-black text-[#1e1e24]">{num.number}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* What to Pack Section - Magazine Style */}
@@ -441,26 +458,17 @@ export function SnapshotCard({ snapshot, destination, month, isCompact = false }
                   </ul>
                 </div>
 
-                {/* Emergency & Health */}
+                {/* Health & Hospital */}
                 <div className="brutal-card bg-[#f5fff8] p-6 border-green-500">
                   <h4 className="font-black uppercase text-sm mb-4 flex items-center gap-2 text-green-600">
-                    <Phone className="w-5 h-5" /> Emergency Services
+                    <Hospital className="w-5 h-5" /> Recommended Hospital
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    {snapshot.secrets.emergencyNumbers.map((num, i) => (
-                      <div key={i} className="bg-white p-3 brutal-border shadow-[2px_2px_0px_0px_#1e1e24]">
-                        <p className="text-[10px] font-black uppercase text-gray-400 leading-none mb-1">{num.service}</p>
-                        <p className="text-lg font-black text-[#1e1e24]">{num.number}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <h4 className="font-black uppercase text-[10px] mb-2 text-green-600 tracking-widest">Recommended Hospital</h4>
-                  <div className="bg-white p-3 brutal-border shadow-[2px_2px_0px_0px_#1e1e24]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Hospital className="w-4 h-4 text-green-600" />
-                      <p className="text-sm font-black">{snapshot.secrets.bestHospital.name}</p>
+                  <div className="bg-white p-4 brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Hospital className="w-5 h-5 text-green-600" />
+                      <p className="text-base font-black">{snapshot.secrets.bestHospital.name}</p>
                     </div>
-                    <p className="text-[10px] font-bold text-gray-500 leading-tight">{snapshot.secrets.bestHospital.reason}</p>
+                    <p className="text-xs font-bold text-gray-500 leading-tight">{snapshot.secrets.bestHospital.reason}</p>
                   </div>
                 </div>
 
