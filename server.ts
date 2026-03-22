@@ -9,6 +9,10 @@ async function startServer() {
 
   app.use(express.json());
 
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV });
+  });
+
   // Gemini logic moved to server-side to hide API key
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -17,14 +21,20 @@ async function startServer() {
   }
 
   app.post("/api/snapshot", async (req, res) => {
+    console.log("Received snapshot request:", req.body);
     const { destination, month, activity } = req.body;
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is missing in server environment");
+      return res.status(500).json({ error: "Server configuration error: Missing API Key" });
+    }
 
     const prompt = `Provide a highly detailed, honest, and blunt travel snapshot for ${destination} in the month of ${month}, with a focus on the activity: ${activity}.
     
     You are a travel advisor who tells the truth. If it's a terrible time to go (e.g., monsoons, extreme heat, massive crowds, closed attractions), score it low and explain why.
     If it's the perfect time, explain why.
     
-    CRITICAL CONSTRAINT: Do NOT use em-dashes (â€”) in any part of your response. Use colons (:), periods (.), or commas (,) instead.
+    CRITICAL CONSTRAINT: Do NOT use em-dashes (—) in any part of your response. Use colons (:), periods (.), or commas (,) instead.
     
     SPECIFIC ADVISORY OVERRIDE: If the destination is Dubai, the travelAdvisory level MUST be "Level 2: Exercise Increased Caution" due to regional instability and current security concerns.
     
@@ -33,16 +43,16 @@ async function startServer() {
     - label: "Perfect Time", "Great", "Good", "Fair", "Go With Caution", or "Think Twice".
     - weatherIcon: strictly one of "sun", "rain", "snow", "cloud", "fog", "storm".
     - typicalWeatherState: Strictly one of the following based on typical climate for this month:
-      * SNOW: avg temp below 2Â°C or regular snowfall
+      * SNOW: avg temp below 2°C or regular snowfall
       * RAINY: more than 150mm rainfall that month, frequent grey days
       * FOGGY: smog season, low visibility, overcast dominant
       * GREEN: post-monsoon or spring, lush vegetation, mild temps
       * DRY_GRASS: hot and dry, under 20mm rain, brown landscape
-      * SUNNY: clear skies, 20â€“30Â°C, low humidity, pleasant
-      * SCORCHING: above 35Â°C average, dangerous midday heat
+      * SUNNY: clear skies, 20–30°C, low humidity, pleasant
+      * SCORCHING: above 35°C average, dangerous midday heat
       * MONSOON: tropical heavy rain, flooding possible, 200mm+ rainfall
-      * AUTUMN: cooling temps 10â€“20Â°C, low rain, falling leaves
-      * SPRING: warming 15â€“22Â°C, blooming, low rain
+      * AUTUMN: cooling temps 10–20°C, low rain, falling leaves
+      * SPRING: warming 15–22°C, blooming, low rain
     - packingList: A personalized packing list for this destination and month:
       * essentials: 2-3 must-have items (e.g., "Universal adapter", "Physical map").
       * clothing: 3-5 specific clothing items based on weather (e.g., "Light linen shirts", "Thermal base layers").
@@ -96,7 +106,13 @@ async function startServer() {
       if (success) break;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await ai.models.generateContent({
+          console.log(`Attempting snapshot with ${model} (attempt ${attempt + 1})`);
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("AI request timed out after 55 seconds.")), 55000)
+          );
+
+          const responsePromise = ai.models.generateContent({
             model: model,
             contents: prompt,
             config: {
@@ -231,16 +247,20 @@ async function startServer() {
             }
           });
 
+          const response = await Promise.race([responsePromise, timeoutPromise]) as any;
           const text = response.text;
           if (!text) throw new Error("Empty response from AI model.");
           result = JSON.parse(text);
           success = true;
+          console.log("Successfully generated snapshot");
           break;
         } catch (err: any) {
           lastError = err;
           const errorMessage = err.message || JSON.stringify(err);
+          console.error(`Error with ${model} (attempt ${attempt + 1}):`, errorMessage);
           
           if (errorMessage.includes("500") && attempt === 0) {
+            console.warn("Retrying without tools due to 500 error");
             try {
               const noToolResponse = await ai.models.generateContent({
                 model: model,
@@ -252,12 +272,16 @@ async function startServer() {
                 success = true;
                 break;
               }
-            } catch (inner) {}
+            } catch (inner) {
+              console.error("No-tool fallback failed:", inner);
+            }
           }
 
-          const isRetryable = errorMessage.includes("503") || errorMessage.includes("429") || errorMessage.includes("high demand");
+          const isRetryable = errorMessage.includes("503") || errorMessage.includes("429") || errorMessage.includes("high demand") || errorMessage.includes("timeout");
           if (isRetryable && attempt < maxRetries) {
-            await sleep(Math.pow(2, attempt) * 1000);
+            const delay = Math.pow(2, attempt) * 2000;
+            console.log(`Retrying in ${delay}ms...`);
+            await sleep(delay);
             continue;
           }
           break;
@@ -268,7 +292,126 @@ async function startServer() {
     if (success) {
       res.json(result);
     } else {
+      console.error("All attempts failed for snapshot generation");
       res.status(500).json({ error: lastError?.message || "Failed to generate snapshot" });
+    }
+  });
+
+  app.post("/api/advisories", async (req, res) => {
+    console.log("Received advisories request");
+    
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is missing in server environment");
+      return res.status(500).json({ error: "Server configuration error: Missing API Key" });
+    }
+
+    const prompt = `Search for the most recent and significant global travel advisories, warnings, or major travel-disrupting news (e.g., strikes, natural disasters, political unrest) from the last 48 hours.
+    
+    Include an advisory for Tehran, Iran and Dubai, UAE as they are priority locations for this board. For Dubai, the level must be "Caution" (Level 2) due to regional instability.
+    
+    Provide exactly 4-6 diverse advisories for different global locations.
+    
+    For each advisory, provide:
+    - location: The city or country.
+    - level: Strictly one of "High Caution", "Caution", "Warning", "Alert".
+    - message: A short, blunt summary of the situation (max 15 words).
+    
+    Use Google Search to ensure the information is current as of today, March 15, 2026.`;
+
+    let lastError: any;
+    const maxRetries = 3;
+    const models = ["gemini-3-flash-preview", "gemini-3.1-pro-preview"];
+    
+    let success = false;
+    let result: any = null;
+
+    for (const model of models) {
+      if (success) break;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`Attempting advisories with ${model} (attempt ${attempt + 1})`);
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Advisory request timed out after 85 seconds.")), 85000)
+          );
+
+          const responsePromise = ai.models.generateContent({
+            model: model,
+            contents: prompt,
+            config: {
+              tools: [{ googleSearch: {} }],
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    location: { type: Type.STRING },
+                    level: { type: Type.STRING },
+                    message: { type: Type.STRING },
+                  },
+                  required: ["location", "level", "message"]
+                }
+              }
+            }
+          });
+
+          const response = await Promise.race([responsePromise, timeoutPromise]) as any;
+          const text = response.text;
+          if (!text) throw new Error("Empty response from model");
+          result = JSON.parse(text);
+          success = true;
+          console.log("Successfully generated advisories");
+          break;
+        } catch (error: any) {
+          lastError = error;
+          const errorMessage = error.message || JSON.stringify(error);
+          console.error(`Error with ${model} (attempt ${attempt + 1}):`, errorMessage);
+          
+          if (errorMessage.includes("500") && attempt === 0) {
+            try {
+              const noToolResponse = await ai.models.generateContent({
+                model: model,
+                contents: prompt + "\n\nIMPORTANT: Do not use external search tools for this specific retry. Use your internal knowledge.",
+                config: {
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        location: { type: Type.STRING },
+                        level: { type: Type.STRING },
+                        message: { type: Type.STRING },
+                      },
+                      required: ["location", "level", "message"]
+                    }
+                  }
+                }
+              });
+              if (noToolResponse.text) {
+                result = JSON.parse(noToolResponse.text);
+                success = true;
+                break;
+              }
+            } catch (inner) {}
+          }
+
+          const isRetryable = errorMessage.includes("503") || errorMessage.includes("429") || errorMessage.includes("high demand") || errorMessage.includes("timeout");
+          if (isRetryable && attempt < maxRetries) {
+            await sleep(Math.pow(2, attempt) * 2000);
+            continue;
+          }
+          break;
+        }
+      }
+    }
+
+    if (success) {
+      res.json(result);
+    } else {
+      console.error("All attempts failed for advisories generation");
+      res.status(500).json({ error: lastError?.message || "Failed to generate advisories" });
     }
   });
 
@@ -290,5 +433,13 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
 
 startServer();

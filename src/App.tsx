@@ -155,6 +155,10 @@ export default function App() {
       const msg = err.message || "";
       if (msg.includes("overwhelmed") || msg.includes("503") || msg.includes("429")) {
         setError("The travel advisor is currently very busy. Please wait a few seconds and try again.");
+      } else if (msg.includes("timed out") || msg.includes("AbortError")) {
+        setError("The request timed out. The AI is taking longer than usual to respond. Please try again.");
+      } else if (msg.includes("API Key")) {
+        setError("Server configuration error: The AI service is not properly configured. Please contact support.");
       } else {
         setError("Oops! We couldn't fetch the travel data right now. Please check your connection and try again.");
       }

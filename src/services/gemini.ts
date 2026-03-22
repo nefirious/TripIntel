@@ -1,11 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-async function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 export interface TravelSnapshot {
   score: number;
   label: string;
@@ -80,6 +72,9 @@ export async function getTravelSnapshot(
   month: string,
   activity: string = 'General'
 ): Promise<TravelSnapshot> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+
   try {
     const response = await fetch('/api/snapshot', {
       method: 'POST',
@@ -87,7 +82,10 @@ export async function getTravelSnapshot(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ destination, month, activity }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -96,6 +94,10 @@ export async function getTravelSnapshot(
 
     return await response.json();
   } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error("The request timed out. Please try again.");
+    }
     console.error("Failed to fetch travel snapshot:", err);
     throw err;
   }
