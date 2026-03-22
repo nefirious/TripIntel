@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
 export interface TravelAdvisory {
   location: string;
   level: 'High Caution' | 'Caution' | 'Warning' | 'Alert';
@@ -7,51 +9,131 @@ export interface TravelAdvisory {
   sourceUrl?: string;
 }
 
+function extractJson(text: string): any {
+  let cleanJson = text;
+  // Try to find an array block
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (jsonMatch) {
+    cleanJson = jsonMatch[0];
+  } else {
+    cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  }
+  return JSON.parse(cleanJson);
+}
+
 export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-
   const prompt = `Search for the most recent and significant global travel advisories, warnings, or major travel-disrupting news (e.g., strikes, natural disasters, political unrest) from the last 48 hours.
-    
-    Include an advisory for Tehran, Iran and Dubai, UAE as they are priority locations for this board. For Dubai, the level must be "Caution" (Level 2) due to regional instability.
-    
-    Provide exactly 4-6 diverse advisories for different global locations.
-    
-    For each advisory, provide:
-    - location: The city or country.
-    - level: Strictly one of "High Caution", "Caution", "Warning", "Alert".
-    - message: A short, blunt summary of the situation (max 15 words).
-    
-    Use Google Search to ensure the information is current as of today, March 22, 2026.`;
+  
+  Include an advisory for Tehran, Iran and Dubai, UAE as they are priority locations for this board. For Dubai, the level must be "Caution" (Level 2) due to regional instability.
+  
+  Provide exactly 4-6 diverse advisories for different global locations.
+  
+  For each advisory, provide:
+  - location: The city or country.
+  - level: Strictly one of "High Caution", "Caution", "Warning", "Alert".
+  - message: A short, blunt summary of the situation (max 15 words).
+  
+  Use Google Search to ensure the information is current as of today, March 15, 2026.`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              location: { type: Type.STRING },
-              level: { type: Type.STRING },
-              message: { type: Type.STRING },
-            },
-            required: ["location", "level", "message"]
+  let lastError: any;
+  const maxRetries = 3;
+  const models = ["gemini-3-flash-preview", "gemini-3.1-pro-preview"];
+  
+  for (const model of models) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Advisory request timed out after 90 seconds.")), 90000)
+        );
+
+        const responsePromise = ai.models.generateContent({
+          model: model,
+          contents: prompt,
+          config: {
+            tools: [{ googleSearch: {} }],
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  location: { type: Type.STRING },
+                  level: { type: Type.STRING },
+                  message: { type: Type.STRING },
+                },
+                required: ["location", "level", "message"]
+              }
+            }
+          }
+        });
+
+        const response = await Promise.race([responsePromise, timeoutPromise]) as any;
+
+        const text = response.text;
+        if (!text) throw new Error("Empty response from model");
+
+        return extractJson(text) as TravelAdvisory[];
+      } catch (error: any) {
+        lastError = error;
+        const errorMessage = error.message || JSON.stringify(error);
+        
+        // If it's a 500 error, it might be the googleSearch tool failing.
+        // Let's try one more time without the tool for this model before giving up.
+        if (errorMessage.includes("500") && attempt === 0) {
+          console.warn(`Advisory API returned 500 with tools. Retrying ${model} without tools...`);
+          try {
+            const noToolResponse = await ai.models.generateContent({
+              model: model,
+              contents: prompt + "\n\nIMPORTANT: Do not use external search tools for this specific retry. Use your internal knowledge.",
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      location: { type: Type.STRING },
+                      level: { type: Type.STRING },
+                      message: { type: Type.STRING },
+                    },
+                    required: ["location", "level", "message"]
+                  }
+                }
+              }
+            });
+            const text = noToolResponse.text;
+            if (text) {
+              return extractJson(text) as TravelAdvisory[];
+            }
+          } catch (innerError) {
+            console.error("Safe fallback generation also failed:", innerError);
           }
         }
-      }
-    });
 
-    const text = response.text;
-    if (!text) throw new Error("Empty response from model");
-    return JSON.parse(text);
-  } catch (err: any) {
-    console.error("Failed to fetch advisories:", err);
-    return getFallbackAdvisories();
+        const isRetryable = 
+          errorMessage.includes("503") || 
+          errorMessage.includes("429") || 
+          errorMessage.includes("high demand") ||
+          errorMessage.includes("timed out") ||
+          error.status === "UNAVAILABLE";
+
+        if (isRetryable && attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1500 + Math.random() * 1000;
+          console.warn(`Advisory API busy with ${model} (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${Math.round(delay)}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        // If it's not retryable or we've exhausted retries for this model, 
+        // we'll break the inner loop and try the next model.
+        console.warn(`Model ${model} failed, trying next model or fallback.`);
+        break;
+      }
+    }
   }
+
+  console.error("Error fetching live advisories after all retries and model fallbacks:", lastError);
+  return getFallbackAdvisories();
 }
 
 function getFallbackAdvisories(): TravelAdvisory[] {

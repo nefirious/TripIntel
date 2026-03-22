@@ -1,16 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { SearchForm } from './components/SearchForm';
 import { SnapshotCard } from './components/SnapshotCard';
 import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
 import { getTravelSnapshot, TravelSnapshot } from './services/gemini';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
-import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check, TrendingUp } from 'lucide-react';
+import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
-import { incrementSearchCount, getTopSearchedCities } from './firebase';
 
-// Default featured cities if Firestore is empty
-const DEFAULT_FEATURED_DATA = [
+const FEATURED_CITIES = [
+  "Tokyo, Japan",
+  "Paris, France",
+  "London, UK",
+  "Bali, Indonesia",
+  "New York City, USA",
+  "Sydney, Australia"
+];
+
+// Mock data for initial featured cards to avoid massive API calls on load
+// In a real app, these would be cached or pre-generated
+const INITIAL_FEATURED_DATA = [
   { city: "Tokyo, Japan", score: 9, weatherIcon: 'sun' as const, temperature: "15°C" },
   { city: "Paris, France", score: 7, weatherIcon: 'cloud' as const, temperature: "12°C" },
   { city: "London, UK", score: 5, weatherIcon: 'rain' as const, temperature: "10°C" },
@@ -35,36 +44,6 @@ export default function App() {
   const [advisories, setAdvisories] = useState<TravelAdvisory[]>([]);
   const [isAdvisoriesLoading, setIsAdvisoriesLoading] = useState(true);
   const [showCopied, setShowCopied] = useState(false);
-  const [featuredCities, setFeaturedCities] = useState<any[]>([]);
-  const [isFeaturedLoading, setIsFeaturedLoading] = useState(true);
-
-  const fetchFeaturedCities = useCallback(async () => {
-    setIsFeaturedLoading(true);
-    try {
-      const topCities = await getTopSearchedCities(6);
-      if (topCities && topCities.length > 0) {
-        // Map top cities to include mock score and weather for UI consistency
-        const mapped = topCities.map(c => ({
-          city: c.city,
-          score: Math.floor(Math.random() * 4) + 6, // 6-9
-          weatherIcon: ['sun', 'cloud', 'rain'][Math.floor(Math.random() * 3)] as any,
-          temperature: `${Math.floor(Math.random() * 20) + 10}°C`
-        }));
-        setFeaturedCities(mapped);
-      } else {
-        setFeaturedCities(DEFAULT_FEATURED_DATA);
-      }
-    } catch (err) {
-      console.error("Failed to fetch featured cities", err);
-      setFeaturedCities(DEFAULT_FEATURED_DATA);
-    } finally {
-      setIsFeaturedLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFeaturedCities();
-  }, [fetchFeaturedCities]);
 
   useEffect(() => {
     async function fetchAdvisories() {
@@ -138,27 +117,17 @@ export default function App() {
     window.scrollTo({ top: 400, behavior: 'smooth' });
 
     try {
-      // Increment search count in Firestore
-      incrementSearchCount(destination);
-      
       const data = await getTravelSnapshot(destination, month, activity);
       if (isSecondCity) {
         setComparisonSnapshot(data);
       } else {
         setSnapshot(data);
       }
-      
-      // Refresh featured cities to reflect the new search
-      fetchFeaturedCities();
     } catch (err: any) {
       console.error(err);
       const msg = err.message || "";
       if (msg.includes("overwhelmed") || msg.includes("503") || msg.includes("429")) {
         setError("The travel advisor is currently very busy. Please wait a few seconds and try again.");
-      } else if (msg.includes("timed out") || msg.includes("AbortError")) {
-        setError("The request timed out. The AI is taking longer than usual to respond. Please try again.");
-      } else if (msg.includes("API Key")) {
-        setError("Server configuration error: The AI service is not properly configured. Please contact support.");
       } else {
         setError("Oops! We couldn't fetch the travel data right now. Please check your connection and try again.");
       }
@@ -314,34 +283,22 @@ export default function App() {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-[#ffde59]" /> Most Searched Destinations
+                <Sparkles className="w-8 h-8 text-[#ffde59]" /> Featured in {currentMonth}
               </h3>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                <div className="w-2 h-2 bg-[#ffde59] rounded-full animate-pulse"></div>
-                Trending Now
-              </div>
             </div>
             
-            {isFeaturedLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1,2,3,4,5,6].map(i => (
-                  <div key={i} className="brutal-card h-40 bg-gray-100 animate-pulse"></div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredCities.map((data) => (
-                  <CityCard 
-                    key={data.city}
-                    city={data.city}
-                    score={data.score}
-                    weatherIcon={data.weatherIcon}
-                    temperature={data.temperature}
-                    onClick={() => handleSearch(data.city, currentMonth)}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {INITIAL_FEATURED_DATA.map((data) => (
+                <CityCard 
+                  key={data.city}
+                  city={data.city}
+                  score={data.score}
+                  weatherIcon={data.weatherIcon}
+                  temperature={data.temperature}
+                  onClick={() => handleSearch(data.city, currentMonth)}
+                />
+              ))}
+            </div>
           </div>
         )}
 

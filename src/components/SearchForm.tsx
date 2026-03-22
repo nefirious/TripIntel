@@ -140,39 +140,32 @@ export function SearchForm({ onSearch, isLoading, compact = false }: SearchFormP
 
       </div>
 
-      <div className={`mt-6 flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-between items-center`}>
+      <div className={`mt-6 flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-end`}>
         {!compact && (
-          <div className="text-[10px] font-black uppercase tracking-widest text-white/60">
-            Data powered by <a href="https://safetyindex.net" target="_blank" rel="noreferrer" className="underline hover:text-white transition-colors">safetyindex.net</a>
-          </div>
-        )}
-        <div className={`flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-end w-full sm:w-auto`}>
-          {!compact && (
-            <button
-              type="button"
-              onClick={handleSurpriseMe}
-              disabled={isLoading}
-              className="brutal-btn bg-[#5ce1e6] text-[#1e1e24] px-6 py-3 flex items-center justify-center gap-2 hover:bg-[#4bc5ca]"
-            >
-              <Shuffle className="w-5 h-5" />
-              Surprise Me
-            </button>
-          )}
           <button
-            type="submit"
-            disabled={isLoading || !destination}
-            className={`brutal-btn ${compact ? 'bg-[#ff66c4] text-white' : 'bg-[#ffde59] text-[#1e1e24]'} px-8 py-3 flex items-center justify-center gap-2 hover:opacity-90 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+            type="button"
+            onClick={handleSurpriseMe}
+            disabled={isLoading}
+            className="brutal-btn bg-[#5ce1e6] text-[#1e1e24] px-6 py-3 flex items-center justify-center gap-2 hover:bg-[#4bc5ca]"
           >
-            {isLoading ? (
-              <span className="animate-pulse">Analyzing...</span>
-            ) : (
-              <>
-                <Search className="w-5 h-5" />
-                {compact ? 'Add to Compare' : 'Check Timing'}
-              </>
-            )}
+            <Shuffle className="w-5 h-5" />
+            Surprise Me
           </button>
-        </div>
+        )}
+        <button
+          type="submit"
+          disabled={isLoading || !destination}
+          className={`brutal-btn ${compact ? 'bg-[#ff66c4] text-white' : 'bg-[#ffde59] text-[#1e1e24]'} px-8 py-3 flex items-center justify-center gap-2 hover:opacity-90 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          {isLoading ? (
+            <span className="animate-pulse">Analyzing...</span>
+          ) : (
+            <>
+              <Search className="w-5 h-5" />
+              {compact ? 'Add to Compare' : 'Check Timing'}
+            </>
+          )}
+        </button>
       </div>
     </form>
   );
