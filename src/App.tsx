@@ -9,23 +9,23 @@ import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Sh
 import { MONTHS, DESTINATIONS } from './constants';
 
 const FEATURED_CITIES = [
-  "Tokyo, Japan",
-  "Paris, France",
   "London, UK",
-  "Bali, Indonesia",
+  "Paris, France",
   "New York City, USA",
-  "Sydney, Australia"
+  "Chicago, USA",
+  "Amsterdam, Netherlands",
+  "Venice, Italy"
 ];
 
 // Mock data for initial featured cards to avoid massive API calls on load
 // In a real app, these would be cached or pre-generated
 const INITIAL_FEATURED_DATA = [
-  { city: "Tokyo, Japan", score: 9, weatherIcon: 'sun' as const, temperature: "15°C" },
-  { city: "Paris, France", score: 7, weatherIcon: 'cloud' as const, temperature: "12°C" },
-  { city: "London, UK", score: 5, weatherIcon: 'rain' as const, temperature: "10°C" },
-  { city: "Bali, Indonesia", score: 8, weatherIcon: 'sun' as const, temperature: "28°C" },
-  { city: "New York City, USA", score: 6, weatherIcon: 'cloud' as const, temperature: "8°C" },
-  { city: "Sydney, Australia", score: 9, weatherIcon: 'sun' as const, temperature: "24°C" },
+  { city: "London, UK", score: 4, weatherIcon: 'rain' as const, temperature: "9°C" },
+  { city: "Paris, France", score: 5, weatherIcon: 'cloud' as const, temperature: "11°C" },
+  { city: "New York City, USA", score: 4, weatherIcon: 'cloud' as const, temperature: "7°C" },
+  { city: "Chicago, USA", score: 3, weatherIcon: 'cloud' as const, temperature: "4°C" },
+  { city: "Amsterdam, Netherlands", score: 4, weatherIcon: 'rain' as const, temperature: "8°C" },
+  { city: "Venice, Italy", score: 5, weatherIcon: 'cloud' as const, temperature: "12°C" },
 ];
 
 export default function App() {
@@ -283,7 +283,7 @@ export default function App() {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
-                <Sparkles className="w-8 h-8 text-[#ffde59]" /> Featured in {currentMonth}
+                <Sparkles className="w-8 h-8 text-[#ff5757]" /> Avoid in {currentMonth}
               </h3>
             </div>
             

@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "SearchCount": {
+      "title": "SearchCount",
+      "description": "Tracks the number of times a city has been searched.",
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string",
+          "description": "The name of the city (e.g., 'Tokyo, Japan')."
+        },
+        "count": {
+          "type": "integer",
+          "description": "The number of times this city has been searched."
+        },
+        "lastSearched": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The last time this city was searched."
+        }
+      },
+      "required": ["city", "count"]
+    }
+  },
+  "firestore": {
+    "/searches/{cityId}": {
+      "schema": "SearchCount",
+      "description": "Collection of search counts for cities."
+    }
+  }
+}
