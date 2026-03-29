@@ -69,6 +69,26 @@ export interface TravelSnapshot {
   };
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    const isRetryable = 
+      error.message?.includes('429') || 
+      error.message?.includes('503') || 
+      error.message?.includes('overwhelmed') ||
+      error.message?.includes('deadline') ||
+      error.message?.includes('fetch');
+
+    if (retries > 0 && isRetryable) {
+      console.log(`Retrying API call... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 export async function getTravelSnapshot(
   destination: string,
   month: string,
@@ -76,11 +96,6 @@ export async function getTravelSnapshot(
 ): Promise<TravelSnapshot> {
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey === '') {
-    console.error("GEMINI_API_KEY is not configured correctly in the environment.");
-    throw new Error("API Key is missing or invalid. Please ensure GEMINI_API_KEY is set in the AI Studio Secrets panel.");
-  }
-
   const ai = new GoogleGenAI({ apiKey });
   
   const prompt = `Provide a highly detailed, honest, and blunt travel snapshot for ${destination} in the month of ${month}, with a focus on the activity: ${activity}.
@@ -149,7 +164,7 @@ export async function getTravelSnapshot(
           
     Use Google Search to verify the most recent currency exchange rates and any active travel advisories for the destination.`;
 
-  try {
+  return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
@@ -288,8 +303,5 @@ export async function getTravelSnapshot(
     const text = response.text;
     if (!text) throw new Error("Empty response from AI model.");
     return JSON.parse(text);
-  } catch (err: any) {
-    console.error("Failed to fetch travel snapshot:", err);
-    throw err;
-  }
+  });
 }

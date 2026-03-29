@@ -7,13 +7,28 @@ export interface TravelAdvisory {
   sourceUrl?: string;
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    const isRetryable = 
+      error.message?.includes('429') || 
+      error.message?.includes('503') || 
+      error.message?.includes('overwhelmed') ||
+      error.message?.includes('deadline') ||
+      error.message?.includes('fetch');
+
+    if (retries > 0 && isRetryable) {
+      console.log(`Retrying Advisory API call... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
-
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey === '') {
-    console.error("GEMINI_API_KEY is not configured correctly in the environment.");
-    throw new Error("API Key is missing or invalid. Please ensure GEMINI_API_KEY is set in the AI Studio Secrets panel.");
-  }
 
   const ai = new GoogleGenAI({ apiKey });
 
@@ -31,32 +46,34 @@ export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
     Use Google Search to ensure the information is current as of today, March 22, 2026.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              location: { type: Type.STRING },
-              level: { type: Type.STRING },
-              message: { type: Type.STRING },
-            },
-            required: ["location", "level", "message"]
+    return await withRetry(async () => {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                location: { type: Type.STRING },
+                level: { type: Type.STRING },
+                message: { type: Type.STRING },
+              },
+              required: ["location", "level", "message"]
+            }
           }
         }
-      }
-    });
+      });
 
-    const text = response.text;
-    if (!text) throw new Error("Empty response from model");
-    return JSON.parse(text);
+      const text = response.text;
+      if (!text) throw new Error("Empty response from model");
+      return JSON.parse(text);
+    });
   } catch (err: any) {
-    console.error("Failed to fetch advisories:", err);
+    console.error("Failed to fetch advisories after retries:", err);
     return getFallbackAdvisories();
   }
 }

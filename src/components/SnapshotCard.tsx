@@ -1,12 +1,14 @@
 import { TravelSnapshot } from '../services/gemini';
+import { AirportStatus } from '../services/airport';
 import { WeatherIcon } from './WeatherIcon';
 import { motion } from 'motion/react';
-import { AlertTriangle, Calendar, Users, DollarSign, Info, ShieldAlert, XCircle, Thermometer, Clock, Utensils, Coffee, Briefcase, Shirt, PlusCircle, CheckCircle2, Lock, Unlock, Phone, Landmark, Coins, Hospital, Zap, Wifi, ShieldCheck, Syringe, Flag, Home, Users2, Trees, Mountain, PawPrint, Car } from 'lucide-react';
+import { AlertTriangle, Calendar, Users, DollarSign, Info, ShieldAlert, XCircle, Thermometer, Clock, Utensils, Coffee, Briefcase, Shirt, PlusCircle, CheckCircle2, Lock, Unlock, Phone, Landmark, Coins, Hospital, Zap, Wifi, ShieldCheck, Syringe, Flag, Home, Users2, Trees, Mountain, PawPrint, Car, Activity } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getLiveWeather, WeatherInfo, WEATHER_METADATA } from '../services/weather';
 
 interface SnapshotCardProps {
   snapshot: TravelSnapshot;
+  airportStatus?: AirportStatus;
   destination: string;
   month: string;
   isCompact?: boolean;
@@ -28,7 +30,7 @@ const getScoreTextColor = (score: number) => {
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-export function SnapshotCard({ snapshot, destination, month, isCompact = false }: SnapshotCardProps) {
+export function SnapshotCard({ snapshot, airportStatus, destination, month, isCompact = false }: SnapshotCardProps) {
   const scoreColor = getScoreColor(snapshot.score);
   const [liveWeather, setLiveWeather] = useState<WeatherInfo | null>(null);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
@@ -273,6 +275,48 @@ export function SnapshotCard({ snapshot, destination, month, isCompact = false }
                   <li key={i} className="text-[11px] font-bold leading-tight">🛡️ {item}</li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Live Airport Intelligence */}
+          {airportStatus && (
+            <div className={`bg-[#1e1e24] text-white p-4 rounded-xl border-2 border-[#1e1e24] space-y-3 relative overflow-hidden ${isCompact ? '' : 'md:col-span-2'}`}>
+              <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+                <Activity className="w-24 h-24" />
+              </div>
+              <div className="flex items-center justify-between relative z-10">
+                <h3 className="font-black uppercase text-sm flex items-center gap-2 text-[#5ce1e6]">
+                  <Activity className="w-4 h-4" /> Live Airport Intelligence
+                </h3>
+                <span className="text-[8px] font-black uppercase tracking-widest opacity-50">
+                  Updated: {airportStatus.lastUpdated}
+                </span>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 relative z-10">
+                <div className="flex-1 bg-white/10 p-3 rounded-lg border border-white/20">
+                  <p className="text-[10px] font-black uppercase text-[#5ce1e6] mb-1">{airportStatus.airportName}</p>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${
+                      airportStatus.crowdLevel === 'Low' ? 'bg-green-400' :
+                      airportStatus.crowdLevel === 'Moderate' ? 'bg-yellow-400' :
+                      airportStatus.crowdLevel === 'High' ? 'bg-orange-400' :
+                      'bg-red-400'
+                    }`}></div>
+                    <span className="text-lg font-black uppercase tracking-tighter">{airportStatus.statusLabel}</span>
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <p className="text-xs font-bold leading-tight opacity-80">{airportStatus.details}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {airportStatus.tips.map((tip, i) => (
+                      <span key={i} className="text-[9px] font-black uppercase bg-[#5ce1e6] text-[#1e1e24] px-1.5 py-0.5 rounded">
+                        {tip}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

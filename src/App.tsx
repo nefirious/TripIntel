@@ -4,6 +4,7 @@ import { SnapshotCard } from './components/SnapshotCard';
 import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
 import { getTravelSnapshot, TravelSnapshot } from './services/gemini';
+import { getAirportStatus, AirportStatus } from './services/airport';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
 import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
@@ -30,7 +31,9 @@ const INITIAL_FEATURED_DATA = [
 
 export default function App() {
   const [snapshot, setSnapshot] = useState<TravelSnapshot | null>(null);
+  const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
   const [comparisonSnapshot, setComparisonSnapshot] = useState<TravelSnapshot | null>(null);
+  const [comparisonAirportStatus, setComparisonAirportStatus] = useState<AirportStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +111,7 @@ export default function App() {
     
     if (!isSecondCity) {
       setSnapshot(null);
+      setAirportStatus(null);
       setCurrentSearch({ destination, month });
     } else {
       setComparisonSearch({ destination, month });
@@ -117,19 +121,25 @@ export default function App() {
     window.scrollTo({ top: 400, behavior: 'smooth' });
 
     try {
-      const data = await getTravelSnapshot(destination, month, activity);
+      const [snapshotData, airportData] = await Promise.all([
+        getTravelSnapshot(destination, month, activity),
+        getAirportStatus(destination)
+      ]);
+
       if (isSecondCity) {
-        setComparisonSnapshot(data);
+        setComparisonSnapshot(snapshotData);
+        setComparisonAirportStatus(airportData);
       } else {
-        setSnapshot(data);
+        setSnapshot(snapshotData);
+        setAirportStatus(airportData);
       }
     } catch (err: any) {
       console.error(err);
       const msg = err.message || "";
-      if (msg.includes("overwhelmed") || msg.includes("503") || msg.includes("429")) {
-        setError("The travel advisor is currently very busy. Please wait a few seconds and try again.");
+      if (msg.includes("overwhelmed") || msg.includes("503") || msg.includes("429") || msg.includes("deadline")) {
+        setError("The travel advisor is currently very busy (high morning traffic). We tried retrying automatically, but it's still slammed. Please wait a moment and try again.");
       } else {
-        setError("Oops! We couldn't fetch the travel data right now. Please check your connection and try again.");
+        setError("Oops! We couldn't fetch the travel data right now. This usually happens when the live data sources are temporarily unreachable. Please try again in a few seconds.");
       }
     } finally {
       setIsLoading(false);
@@ -208,15 +218,24 @@ export default function App() {
             </div>
 
             {isLoading && !snapshot && (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
                 <div className="w-16 h-16 border-8 border-[#ffde59] border-t-[#1e1e24] rounded-full animate-spin"></div>
-                <p className="font-black uppercase tracking-widest animate-pulse">Consulting the travel gods...</p>
+                <div className="space-y-2">
+                  <p className="font-black uppercase tracking-widest animate-pulse">Consulting the travel gods...</p>
+                  <p className="text-xs font-bold opacity-60 uppercase tracking-tight">Real-time intelligence can take up to 2 minutes to fetch</p>
+                </div>
               </div>
             )}
 
             {error && (
-              <div className="bg-red-100 text-red-800 p-6 rounded-xl brutal-border font-bold text-center max-w-2xl mx-auto">
-                {error}
+              <div className="bg-red-100 text-red-800 p-8 rounded-xl brutal-border font-bold text-center max-w-2xl mx-auto flex flex-col items-center gap-4">
+                <p>{error}</p>
+                <button 
+                  onClick={() => handleSearch(currentSearch.destination, currentSearch.month)}
+                  className="brutal-btn bg-white px-6 py-2 text-sm uppercase tracking-widest"
+                >
+                  Try Again
+                </button>
               </div>
             )}
 
@@ -225,6 +244,7 @@ export default function App() {
                 <div className="space-y-4">
                   <SnapshotCard 
                     snapshot={snapshot} 
+                    airportStatus={airportStatus || undefined}
                     destination={currentSearch.destination} 
                     month={currentSearch.month}
                     isCompact={isComparing}
@@ -245,13 +265,17 @@ export default function App() {
               {isComparing && (
                 <div className="space-y-4">
                   {!comparisonSnapshot && isLoading ? (
-                    <div className="brutal-card h-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-gray-50">
+                    <div className="brutal-card h-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-gray-50 text-center">
                       <div className="w-12 h-12 border-4 border-[#ffde59] border-t-[#1e1e24] rounded-full animate-spin mb-4"></div>
-                      <p className="font-bold uppercase text-sm tracking-widest">Loading second city...</p>
+                      <div className="space-y-2">
+                        <p className="font-bold uppercase text-sm tracking-widest">Loading second city...</p>
+                        <p className="text-[10px] font-bold opacity-60 uppercase tracking-tight">Can take up to 2 minutes</p>
+                      </div>
                     </div>
                   ) : comparisonSnapshot ? (
                     <SnapshotCard 
                       snapshot={comparisonSnapshot} 
+                      airportStatus={comparisonAirportStatus || undefined}
                       destination={comparisonSearch.destination} 
                       month={comparisonSearch.month}
                       isCompact={true}
