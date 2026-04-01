@@ -1,30 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { withRetry } from "../lib/api";
 
 export interface TravelAdvisory {
   location: string;
   level: 'High Caution' | 'Caution' | 'Warning' | 'Alert';
   message: string;
   sourceUrl?: string;
-}
-
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
-  try {
-    return await fn();
-  } catch (error: any) {
-    const isRetryable = 
-      error.message?.includes('429') || 
-      error.message?.includes('503') || 
-      error.message?.includes('overwhelmed') ||
-      error.message?.includes('deadline') ||
-      error.message?.includes('fetch');
-
-    if (retries > 0 && isRetryable) {
-      console.log(`Retrying Advisory API call... (${retries} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return withRetry(fn, retries - 1, delay * 2);
-    }
-    throw error;
-  }
 }
 
 export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
@@ -43,7 +24,7 @@ export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
     - level: Strictly one of "High Caution", "Caution", "Warning", "Alert".
     - message: A short, blunt summary of the situation (max 15 words).
     
-    Use Google Search to ensure the information is current as of today, March 22, 2026.`;
+    Use Google Search to ensure the information is current as of today, April 1, 2026.`;
 
   try {
     return await withRetry(async () => {

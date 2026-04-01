@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { withRetry } from "../lib/api";
 
 export interface BusinessSnapshot {
   city: string;
@@ -20,9 +21,10 @@ export interface BusinessSnapshot {
   summary: string;
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function getBusinessSnapshot(city: string): Promise<BusinessSnapshot> {
+  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
+
   const prompt = `Provide a detailed business intelligence report for ${city}. 
   Include:
   - Overall Business Friendliness Score (1-10)
@@ -40,48 +42,50 @@ export async function getBusinessSnapshot(city: string): Promise<BusinessSnapsho
   
   Be blunt and objective.`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          city: { type: Type.STRING },
-          overallFriendlinessScore: { type: Type.NUMBER },
-          companyTypes: { type: Type.ARRAY, items: { type: Type.STRING } },
-          registrationProcess: { 
-            type: Type.STRING, 
-            enum: ['Very Easy', 'Easy', 'Medium', 'Difficult', 'Very Difficult'] 
-          },
-          thrivingBusinesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-          viableBusinesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-          difficultBusinesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-          investmentAmount: { type: Type.STRING },
-          foreignOwnership: { type: Type.STRING },
-          commercialRent: { type: Type.STRING },
-          businessRealities: { type: Type.STRING },
-          restrictions: {
-            type: Type.OBJECT,
-            properties: {
-              canDo: { type: Type.ARRAY, items: { type: Type.STRING } },
-              cantDo: { type: Type.ARRAY, items: { type: Type.STRING } }
+  return withRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            city: { type: Type.STRING },
+            overallFriendlinessScore: { type: Type.NUMBER },
+            companyTypes: { type: Type.ARRAY, items: { type: Type.STRING } },
+            registrationProcess: { 
+              type: Type.STRING, 
+              enum: ['Very Easy', 'Easy', 'Medium', 'Difficult', 'Very Difficult'] 
             },
-            required: ["canDo", "cantDo"]
+            thrivingBusinesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            viableBusinesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            difficultBusinesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+            investmentAmount: { type: Type.STRING },
+            foreignOwnership: { type: Type.STRING },
+            commercialRent: { type: Type.STRING },
+            businessRealities: { type: Type.STRING },
+            restrictions: {
+              type: Type.OBJECT,
+              properties: {
+                canDo: { type: Type.ARRAY, items: { type: Type.STRING } },
+                cantDo: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ["canDo", "cantDo"]
+            },
+            bankingAndCurrency: { type: Type.STRING },
+            summary: { type: Type.STRING }
           },
-          bankingAndCurrency: { type: Type.STRING },
-          summary: { type: Type.STRING }
-        },
-        required: [
-          "city", "overallFriendlinessScore", "companyTypes", "registrationProcess",
-          "thrivingBusinesses", "viableBusinesses", "difficultBusinesses",
-          "investmentAmount", "foreignOwnership", "commercialRent",
-          "businessRealities", "restrictions", "bankingAndCurrency", "summary"
-        ]
+          required: [
+            "city", "overallFriendlinessScore", "companyTypes", "registrationProcess",
+            "thrivingBusinesses", "viableBusinesses", "difficultBusinesses",
+            "investmentAmount", "foreignOwnership", "commercialRent",
+            "businessRealities", "restrictions", "bankingAndCurrency", "summary"
+          ]
+        }
       }
-    }
-  });
+    });
 
-  return JSON.parse(response.text);
+    return JSON.parse(response.text);
+  });
 }

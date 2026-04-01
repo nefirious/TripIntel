@@ -72,11 +72,11 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`brutal-card ${compact ? 'p-4 bg-white' : 'p-6 bg-[#ff66c4]'} max-w-4xl mx-auto w-full relative`}>
+    <form onSubmit={handleSubmit} className={`brutal-card ${compact ? 'p-4 bg-white' : 'p-4 sm:p-6 bg-[#ff66c4]'} max-w-4xl mx-auto w-full relative`}>
       <div className={`flex ${compact ? 'flex-col' : 'flex-col md:flex-row'} gap-4`}>
         
         <div className="flex-1 flex flex-col gap-1 relative">
-          <label className={`font-black uppercase text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>
+          <label className={`font-black uppercase text-[10px] sm:text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>
             {mode === 'travel' ? 'Where to?' : mode === 'schools' ? 'Which City?' : 'Business Hub?'}
           </label>
           <div className="relative">
@@ -85,15 +85,15 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               placeholder={mode === 'travel' ? "Start typing a city..." : mode === 'schools' ? "Enter city for school data..." : "Enter city for business intel..."}
-              className="w-full p-3 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50"
+              className="w-full p-3 sm:p-4 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 text-base sm:text-lg"
             />
             {destination && (
               <button 
                 type="button"
                 onClick={() => setDestination('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black p-2"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 sm:w-5 h-5" />
               </button>
             )}
           </div>
@@ -108,7 +108,7 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
                   key={i}
                   type="button"
                   onClick={() => selectSuggestion(s)}
-                  className="w-full text-left p-3 font-bold hover:bg-[#ffde59] border-b-2 border-[#1e1e24] last:border-b-0 transition-colors"
+                  className="w-full text-left p-3 sm:p-4 font-bold hover:bg-[#ffde59] border-b-2 border-[#1e1e24] last:border-b-0 transition-colors text-sm sm:text-base"
                 >
                   {s}
                 </button>
@@ -119,11 +119,11 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
 
         {mode === 'travel' && (
           <div className="flex-1 flex flex-col gap-1">
-            <label className={`font-black uppercase text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>When?</label>
+            <label className={`font-black uppercase text-[10px] sm:text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>When?</label>
             <select 
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="w-full p-3 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 appearance-none cursor-pointer"
+              className="w-full p-3 sm:p-4 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 appearance-none cursor-pointer text-base sm:text-lg"
             >
               {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
@@ -132,11 +132,11 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
 
         {mode === 'travel' && !compact && (
           <div className="flex-1 flex flex-col gap-1">
-            <label className="font-black uppercase text-sm text-white tracking-wider">Vibe?</label>
+            <label className="font-black uppercase text-[10px] sm:text-sm text-white tracking-wider">Vibe?</label>
             <select 
               value={activity}
               onChange={(e) => setActivity(e.target.value)}
-              className="w-full p-3 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 appearance-none cursor-pointer"
+              className="w-full p-3 sm:p-4 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 appearance-none cursor-pointer text-base sm:text-lg"
             >
               {ACTIVITIES.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
@@ -145,35 +145,37 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
 
       </div>
 
-      <div className={`mt-6 flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-between items-center`}>
+      <div className={`mt-4 sm:mt-6 flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-between items-center`}>
         {!compact && (
-          <div className="text-[10px] font-black uppercase tracking-widest text-white/60">
+          <div className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-white/60 text-center sm:text-left">
             Data powered by <a href="https://safetyindex.net" target="_blank" rel="noreferrer" className="underline hover:text-white transition-colors">safetyindex.net</a>
           </div>
         )}
-        <div className={`flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-end w-full sm:w-auto`}>
+        <div className={`flex ${compact ? 'flex-col' : 'flex-col sm:flex-row'} gap-3 sm:gap-4 justify-end w-full sm:w-auto`}>
           {!compact && (
             <button
               type="button"
               onClick={handleSurpriseMe}
               disabled={isLoading}
-              className="brutal-btn bg-[#5ce1e6] text-[#1e1e24] px-6 py-3 flex items-center justify-center gap-2 hover:bg-[#4bc5ca]"
+              className="brutal-btn bg-[#5ce1e6] text-[#1e1e24] px-6 py-3 flex items-center justify-center gap-2 hover:bg-[#4bc5ca] w-full sm:w-auto"
             >
               <Shuffle className="w-5 h-5" />
-              Surprise Me
+              <span className="uppercase tracking-widest font-black text-xs sm:text-sm">Surprise Me</span>
             </button>
           )}
           <button
             type="submit"
             disabled={isLoading || !destination}
-            className={`brutal-btn ${compact ? 'bg-[#ff66c4] text-white' : 'bg-[#ffde59] text-[#1e1e24]'} px-8 py-3 flex items-center justify-center gap-2 hover:opacity-90 text-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`brutal-btn ${compact ? 'bg-[#ff66c4] text-white' : 'bg-[#ffde59] text-[#1e1e24]'} px-6 sm:px-8 py-3 sm:py-4 flex items-center justify-center gap-2 hover:opacity-90 text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto`}
           >
             {isLoading ? (
-              <span className="animate-pulse">Analyzing...</span>
+              <span className="animate-pulse uppercase tracking-widest font-black text-xs sm:text-sm">Analyzing...</span>
             ) : (
               <>
-                <Search className="w-5 h-5" />
-                {compact ? 'Add to Compare' : mode === 'travel' ? 'Check Timing' : mode === 'schools' ? 'Evaluate Schools' : 'Get Business Intel'}
+                <Search className="w-5 h-5 sm:w-6 h-6" />
+                <span className="uppercase tracking-widest font-black text-xs sm:text-sm">
+                  {compact ? 'Add to Compare' : mode === 'travel' ? 'Check Timing' : mode === 'schools' ? 'Evaluate Schools' : 'Get Business Intel'}
+                </span>
               </>
             )}
           </button>

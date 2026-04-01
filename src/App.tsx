@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SearchForm } from './components/SearchForm';
 import { SnapshotCard } from './components/SnapshotCard';
 import { CityCard } from './components/CityCard';
@@ -16,7 +16,7 @@ import { MONTHS, DESTINATIONS } from './constants';
 const FEATURED_CITIES = [
   "Kyoto, Japan",
   "Rome, Italy",
-  "Bangkok, Thailand",
+  "Amsterdam, Netherlands",
   "Washington DC, USA",
   "Seville, Spain",
   "Cancun, Mexico"
@@ -27,10 +27,10 @@ const FEATURED_CITIES = [
 const INITIAL_FEATURED_DATA = [
   { city: "Kyoto, Japan", score: 9.8, weatherIcon: 'sun' as const, temperature: "18°C" },
   { city: "Rome, Italy", score: 9.5, weatherIcon: 'sun' as const, temperature: "19°C" },
+  { city: "Amsterdam, Netherlands", score: 9.7, weatherIcon: 'sun' as const, temperature: "14°C" },
   { city: "Washington DC, USA", score: 9.4, weatherIcon: 'sun' as const, temperature: "17°C" },
-  { city: "Seville, Spain", score: 9.7, weatherIcon: 'sun' as const, temperature: "24°C" },
-  { city: "Amsterdam, Netherlands", score: 9.2, weatherIcon: 'sun' as const, temperature: "14°C" },
-  { city: "Santorini, Greece", score: 9.1, weatherIcon: 'sun' as const, temperature: "20°C" },
+  { city: "Seville, Spain", score: 9.8, weatherIcon: 'sun' as const, temperature: "24°C" },
+  { city: "Cancun, Mexico", score: 9.2, weatherIcon: 'sun' as const, temperature: "29°C" },
 ];
 
 export default function App() {
@@ -54,6 +54,7 @@ export default function App() {
   const [advisories, setAdvisories] = useState<TravelAdvisory[]>([]);
   const [isAdvisoriesLoading, setIsAdvisoriesLoading] = useState(true);
   const [showCopied, setShowCopied] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchAdvisories() {
@@ -163,7 +164,9 @@ export default function App() {
     }
 
     // Scroll to results
-    window.scrollTo({ top: 400, behavior: 'smooth' });
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
 
     try {
       if (activeTab === 'travel') {
@@ -202,14 +205,14 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b-4 border-[#1e1e24] py-2 px-6 sticky top-0 z-20">
+      <header className="bg-white border-b-4 border-[#1e1e24] py-3 px-4 sm:px-6 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setSnapshot(null)}>
-            <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="flex items-center gap-3 sm:gap-4 cursor-pointer group" onClick={() => setSnapshot(null)}>
+            <div className="relative w-12 h-12 sm:w-16 h-16 flex items-center justify-center">
               {/* Outer Ring */}
-              <div className="absolute inset-0 rounded-full border-4 border-[#1e1e24] bg-white shadow-[4px_4px_0px_0px_#1e1e24] group-hover:rotate-12 transition-transform duration-500"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-[#1e1e24] bg-white shadow-[3px_3px_0px_0px_#1e1e24] sm:shadow-[4px_4px_0px_0px_#1e1e24] group-hover:rotate-12 transition-transform duration-500"></div>
               {/* Compass Face */}
-              <svg viewBox="0 0 100 100" className="w-10 h-10 relative z-10 group-hover:scale-110 transition-transform duration-500">
+              <svg viewBox="0 0 100 100" className="w-8 h-8 sm:w-10 h-10 relative z-10 group-hover:scale-110 transition-transform duration-500">
                 <circle cx="50" cy="50" r="45" fill="none" stroke="#1e1e24" strokeWidth="1" strokeDasharray="2 4" />
                 {/* Cardinal Points */}
                 <text x="50" y="15" textAnchor="middle" fontSize="10" fontWeight="900" fill="#1e1e24">N</text>
@@ -224,18 +227,18 @@ export default function App() {
               </svg>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-4xl font-black tracking-tighter uppercase text-[#1e1e24] leading-none">TripIntel</h1>
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tighter uppercase text-[#1e1e24] leading-none">TripIntel</h1>
               <div className="flex items-center gap-2">
-                <span className="h-[2px] w-4 bg-[#ff5757]"></span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ff5757]">Unfiltered Intelligence</span>
+                <span className="h-[2px] w-3 sm:w-4 bg-[#ff5757]"></span>
+                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-[#ff5757]">Unfiltered Intelligence</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full border border-green-200 text-[10px] font-black uppercase tracking-widest animate-pulse">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-2 sm:px-3 py-1 rounded-full border border-green-200 text-[8px] sm:text-[10px] font-black uppercase tracking-widest animate-pulse">
               <Activity className="w-3 h-3" /> Live Data Active
             </div>
-            <div className="text-sm font-bold bg-gray-100 px-3 py-1 rounded-full brutal-border">
+            <div className="text-[10px] sm:text-sm font-bold bg-gray-100 px-2 sm:px-3 py-1 rounded-full brutal-border">
               Powered by <a href="https://safetyindex.net" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">safetyindex.net</a>
             </div>
           </div>
@@ -243,18 +246,18 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-12 max-w-6xl mx-auto w-full flex flex-col gap-16">
+      <main className="flex-1 p-4 sm:p-6 md:p-12 max-w-6xl mx-auto w-full flex flex-col gap-12 sm:gap-16">
         
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-block bg-[#ffde59] px-4 py-1 rounded-full brutal-border mb-4 font-black uppercase tracking-widest text-xs">
+          <div className="inline-block bg-[#ffde59] px-3 sm:px-4 py-1 rounded-full brutal-border mb-4 font-black uppercase tracking-widest text-[10px] sm:text-xs">
             {activeTab === 'travel' 
               ? `Exploring ${DESTINATIONS.length} Global Destinations` 
               : activeTab === 'schools' 
                 ? 'Analyzing Global Education Hubs' 
                 : 'Mapping Global Business Markets'}
           </div>
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6 leading-[0.9]">
+          <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 sm:mb-6 leading-[0.9]">
             {activeTab === 'travel' ? (
               <>Know <span className="text-[#ff5757]">Before</span> <br/> You Go</>
             ) : activeTab === 'schools' ? (
@@ -263,7 +266,7 @@ export default function App() {
               <>Launch <span className="text-[#ffde59]">With</span> <br/> Real Intel</>
             )}
           </h2>
-          <p className="text-xl font-bold text-gray-600 mb-8">
+          <p className="text-base sm:text-lg md:text-xl font-bold text-gray-600 mb-6 sm:mb-8 px-4">
             {activeTab === 'travel' 
               ? "Unfiltered travel intelligence. Discover the real truth about crowds, pricing, and local realities before you book your next trip."
               : activeTab === 'schools'
@@ -272,17 +275,17 @@ export default function App() {
           </p>
 
           {/* Tab Switcher */}
-          <div className="flex justify-center mb-8">
-            <div className="flex p-1 bg-gray-100 brutal-border rounded-xl">
+          <div className="flex justify-center mb-6 sm:mb-8 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex p-1 bg-gray-100 brutal-border rounded-xl whitespace-nowrap">
               <button 
                 onClick={() => {
                   setActiveTab('travel');
                   setSnapshot(null);
                   setSchoolSnapshot(null);
                 }}
-                className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${activeTab === 'travel' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'travel' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
               >
-                <Compass className="w-4 h-4" />
+                <Compass className="w-3 h-3 sm:w-4 h-4" />
                 Travel
               </button>
               <button 
@@ -292,9 +295,9 @@ export default function App() {
                   setSchoolSnapshot(null);
                   setBusinessSnapshot(null);
                 }}
-                className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${activeTab === 'schools' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'schools' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
               >
-                <GraduationCap className="w-4 h-4" />
+                <GraduationCap className="w-3 h-3 sm:w-4 h-4" />
                 Schools
               </button>
               <button 
@@ -304,9 +307,9 @@ export default function App() {
                   setSchoolSnapshot(null);
                   setBusinessSnapshot(null);
                 }}
-                className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${activeTab === 'business' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'business' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
               >
-                <Briefcase className="w-4 h-4" />
+                <Briefcase className="w-3 h-3 sm:w-4 h-4" />
                 Business
               </button>
             </div>
@@ -316,8 +319,9 @@ export default function App() {
         </div>
 
         {/* Results Section */}
-        {(isLoading || snapshot || schoolSnapshot || businessSnapshot || error) && (
-          <div className="w-full space-y-8 min-h-[400px]">
+        <div ref={resultsRef} className="scroll-mt-24">
+          {(isLoading || snapshot || schoolSnapshot || businessSnapshot || error) && (
+            <div className="w-full space-y-8 min-h-[400px]">
             <div className="flex items-center gap-3 justify-center">
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
               <h3 className="font-black uppercase tracking-widest text-xl">
@@ -424,6 +428,7 @@ export default function App() {
             </div>
           </div>
         )}
+      </div>
 
         {/* Featured Grid */}
         {!snapshot && !schoolSnapshot && !businessSnapshot && !isLoading && (
@@ -515,10 +520,10 @@ export default function App() {
 
         {/* Travel Advisory Board */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Megaphone className="w-8 h-8 text-[#ff5757]" />
-              <h3 className="text-3xl font-black uppercase tracking-tight">Global Advisory Board</h3>
+              <Megaphone className="w-6 h-6 sm:w-8 h-8 text-[#ff5757]" />
+              <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">Global Advisory Board</h3>
             </div>
             <div className="flex items-center gap-4">
               <button 
@@ -541,14 +546,14 @@ export default function App() {
             </div>
           </div>
           
-          <div className="bg-[#d2b48c] p-8 rounded-xl brutal-border shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden min-h-[350px] flex flex-wrap gap-6 justify-center items-center">
+          <div className="bg-[#d2b48c] p-4 sm:p-8 rounded-xl brutal-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden min-h-[300px] sm:min-h-[350px] flex flex-wrap gap-4 sm:gap-6 justify-center items-center">
             {/* Cork texture effect */}
             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '20px 20px' }}></div>
             
             {isAdvisoriesLoading && advisories.length === 0 ? (
               <div className="flex flex-col items-center gap-3 relative z-10">
-                <Loader2 className="w-10 h-10 animate-spin text-[#1e1e24]" />
-                <p className="font-black uppercase text-sm tracking-widest">Scanning Global News...</p>
+                <Loader2 className="w-8 h-8 sm:w-10 h-10 animate-spin text-[#1e1e24]" />
+                <p className="font-black uppercase text-xs sm:text-sm tracking-widest">Scanning Global News...</p>
               </div>
             ) : (
               advisories.map((advisory, idx) => {
@@ -568,15 +573,15 @@ export default function App() {
                 return (
                   <div 
                     key={idx} 
-                    className="brutal-card bg-white p-4 max-w-[220px] relative transition-transform hover:scale-105 hover:z-10"
+                    className="brutal-card bg-white p-3 sm:p-4 max-w-[160px] sm:max-w-[220px] relative transition-transform hover:scale-105 hover:z-10"
                     style={{ transform: `rotate(${rotation}deg)` }}
                   >
-                    <Pin className={`absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-6 ${pinColor}`} />
-                    <div className={`${badgeColor} text-[10px] font-black uppercase px-2 py-0.5 mb-2 inline-block`}>
+                    <Pin className={`absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 sm:w-6 h-6 ${pinColor}`} />
+                    <div className={`${badgeColor} text-[8px] sm:text-[10px] font-black uppercase px-2 py-0.5 mb-2 inline-block`}>
                       {advisory.level}
                     </div>
-                    <p className="font-bold text-sm leading-tight">{advisory.location}</p>
-                    <p className="text-[10px] mt-1 opacity-70 font-medium">{advisory.message}</p>
+                    <p className="font-bold text-xs sm:text-sm leading-tight">{advisory.location}</p>
+                    <p className="text-[9px] sm:text-[10px] mt-1 opacity-70 font-medium">{advisory.message}</p>
                   </div>
                 );
               })
@@ -585,33 +590,33 @@ export default function App() {
         </div>
 
         {/* Real-time Data Notice */}
-        <div className="mt-16 p-8 bg-[#1e1e24] text-white rounded-3xl brutal-border brutal-shadow flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden relative">
+        <div className="mt-8 sm:mt-16 p-6 sm:p-8 bg-[#1e1e24] text-white rounded-2xl sm:rounded-3xl brutal-border shadow-[4px_4px_0px_0px_#1e1e24] sm:shadow-[8px_8px_0px_0px_#1e1e24] flex flex-col md:flex-row items-center justify-between gap-8 overflow-hidden relative">
           <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-            <Globe className="w-64 h-64" />
+            <Globe className="w-48 h-48 sm:w-64 h-64" />
           </div>
           <div className="relative z-10 flex flex-col items-center md:items-start text-center md:text-left gap-4">
-            <div className="bg-[#ffde59] text-[#1e1e24] px-4 py-1 rounded-full font-black uppercase tracking-widest text-xs">
+            <div className="bg-[#ffde59] text-[#1e1e24] px-3 sm:px-4 py-1 rounded-full font-black uppercase tracking-widest text-[10px] sm:text-xs">
               Real-Time Intelligence
             </div>
-            <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-none">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight leading-none">
               Connected to the <br/> <span className="text-[#5ce1e6]">Live Global Pulse</span>
             </h3>
-            <p className="text-sm font-bold opacity-70 max-w-md">
+            <p className="text-xs sm:text-sm font-bold opacity-70 max-w-md">
               TripIntel is connected to real-time data streams. Every snapshot is generated using the latest available information on weather, pricing, and local events to give you the most accurate advice possible.
             </p>
           </div>
-          <div className="relative z-10 flex flex-col items-center gap-2">
+          <div className="relative z-10 flex flex-col items-center gap-3">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
                 {[1,2,3,4].map(i => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-[#1e1e24] bg-gray-800 flex items-center justify-center overflow-hidden">
+                  <div key={i} className="w-8 h-8 sm:w-10 h-10 rounded-full border-2 border-[#1e1e24] bg-gray-800 flex items-center justify-center overflow-hidden">
                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`} alt="User" />
                   </div>
                 ))}
               </div>
-              <span className="font-black text-xs uppercase tracking-widest text-[#ffde59]">{activeQueries.toLocaleString()}+ Active Queries</span>
+              <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest text-[#ffde59]">{activeQueries.toLocaleString()}+ Active Queries</span>
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-400">
+            <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-green-400">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
               System Status: Operational
             </div>
@@ -620,27 +625,27 @@ export default function App() {
 
         {/* Share Section */}
         <div className="mt-8">
-          <div className="brutal-card bg-[#5ce1e6] p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+          <div className="brutal-card bg-[#5ce1e6] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
             <div className="absolute -left-4 -bottom-4 opacity-10 rotate-12">
-              <Share2 className="w-32 h-32" />
+              <Share2 className="w-24 h-24 sm:w-32 h-32" />
             </div>
             <div className="relative z-10 text-center md:text-left">
-              <h4 className="text-3xl font-black uppercase tracking-tighter leading-none mb-2">Spread the Intelligence</h4>
-              <p className="font-bold text-gray-800">Help others discover the unfiltered truth about their next destination.</p>
+              <h4 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter leading-none mb-2">Spread the Intelligence</h4>
+              <p className="text-sm sm:text-base font-bold text-gray-800">Help others discover the unfiltered truth about their next destination.</p>
             </div>
             <button 
               onClick={handleShare}
-              className="relative z-10 flex items-center gap-3 bg-[#ffde59] text-[#1e1e24] px-8 py-4 rounded-xl brutal-border shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all group min-w-[240px] justify-center"
+              className="relative z-10 flex items-center gap-3 bg-[#ffde59] text-[#1e1e24] px-6 sm:px-8 py-3 sm:py-4 rounded-xl brutal-border shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all group min-w-[200px] sm:min-w-[240px] justify-center"
             >
               {showCopied ? (
                 <>
-                  <Check className="w-6 h-6" />
-                  <span className="text-lg font-black uppercase tracking-widest">Link Copied!</span>
+                  <Check className="w-5 h-5 sm:w-6 h-6" />
+                  <span className="text-base sm:text-lg font-black uppercase tracking-widest">Link Copied!</span>
                 </>
               ) : (
                 <>
-                  <Share2 className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                  <span className="text-lg font-black uppercase tracking-widest">Share TripIntel</span>
+                  <Share2 className="w-5 h-5 sm:w-6 h-6 group-hover:rotate-12 transition-transform" />
+                  <span className="text-base sm:text-lg font-black uppercase tracking-widest">Share TripIntel</span>
                 </>
               )}
             </button>
@@ -650,19 +655,19 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#1e1e24] text-white py-12 px-6 mt-auto">
+      <footer className="bg-[#1e1e24] text-white py-8 sm:py-12 px-4 sm:px-6 mt-auto">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex flex-col items-center md:items-start gap-2">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#ffde59] rounded-lg brutal-border flex items-center justify-center shadow-[2px_2px_0px_0px_#1e1e24]">
-                <Compass className="w-6 h-6 text-[#1e1e24]" />
+              <div className="w-8 h-8 sm:w-10 h-10 bg-[#ffde59] rounded-lg brutal-border flex items-center justify-center shadow-[2px_2px_0px_0px_#1e1e24]">
+                <Compass className="w-5 h-5 sm:w-6 h-6 text-[#1e1e24]" />
               </div>
-              <div className="font-black text-3xl tracking-tighter">TRIPINTEL</div>
+              <div className="font-black text-2xl sm:text-3xl tracking-tighter">TRIPINTEL</div>
             </div>
-            <p className="text-xs font-bold opacity-50 uppercase tracking-widest">© 2026 TripIntel | Unfiltered Travel Intelligence</p>
+            <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest text-center md:text-left">© 2026 TripIntel | Unfiltered Travel Intelligence</p>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-8 text-sm font-bold uppercase tracking-wider">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-[10px] sm:text-sm font-bold uppercase tracking-wider">
             <button 
               onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })}
               className="hover:text-[#ffde59] transition-colors"

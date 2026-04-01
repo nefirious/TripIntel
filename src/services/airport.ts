@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import { withRetry } from "../lib/api";
 
 export interface AirportStatus {
   airportName: string;
@@ -7,26 +8,6 @@ export interface AirportStatus {
   lastUpdated: string;
   details: string;
   tips: string[];
-}
-
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
-  try {
-    return await fn();
-  } catch (error: any) {
-    const isRetryable = 
-      error.message?.includes('429') || 
-      error.message?.includes('503') || 
-      error.message?.includes('overwhelmed') ||
-      error.message?.includes('deadline') ||
-      error.message?.includes('fetch');
-
-    if (retries > 0 && isRetryable) {
-      console.log(`Retrying Airport API call... (${retries} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return withRetry(fn, retries - 1, delay * 2);
-    }
-    throw error;
-  }
 }
 
 export async function getAirportStatus(destination: string): Promise<AirportStatus> {

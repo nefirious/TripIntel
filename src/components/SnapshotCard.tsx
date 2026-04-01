@@ -60,27 +60,27 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
       className={`brutal-card flex flex-col w-full ${isCompact ? '' : 'max-w-3xl mx-auto'}`}
     >
       {/* Header Section */}
-      <div className={`${scoreColor} ${isCompact ? 'p-4' : 'p-6'} border-b-4 border-[#1e1e24] flex flex-col md:flex-row items-center justify-between gap-4`}>
-        <div className="flex items-center gap-4">
-          <div className={`bg-white ${isCompact ? 'p-2' : 'p-3'} rounded-xl brutal-border brutal-shadow-sm`}>
-            <WeatherIcon icon={snapshot.weatherIcon} className={isCompact ? "w-10 h-10" : "w-16 h-16"} />
+      <div className={`${scoreColor} ${isCompact ? 'p-3 sm:p-4' : 'p-4 sm:p-6'} border-b-4 border-[#1e1e24] flex flex-col sm:flex-row items-center justify-between gap-4`}>
+        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+          <div className={`bg-white ${isCompact ? 'p-1.5 sm:p-2' : 'p-2 sm:p-3'} rounded-xl brutal-border brutal-shadow-sm shrink-0`}>
+            <WeatherIcon icon={snapshot.weatherIcon} className={isCompact ? "w-8 h-8 sm:w-10 h-10" : "w-12 h-12 sm:w-16 h-16"} />
           </div>
-          <div>
-            <h2 className={`${isCompact ? 'text-xl' : 'text-3xl'} font-black uppercase tracking-tight`}>{destination.split(',')[0]}</h2>
-            <p className={`${isCompact ? 'text-sm' : 'text-xl'} font-bold opacity-80`}>{month}</p>
+          <div className="min-w-0">
+            <h2 className={`${isCompact ? 'text-lg sm:text-xl' : 'text-2xl sm:text-3xl'} font-black uppercase tracking-tight truncate`}>{destination.split(',')[0]}</h2>
+            <p className={`${isCompact ? 'text-xs sm:text-sm' : 'text-lg sm:text-xl'} font-bold opacity-80`}>{month}</p>
           </div>
         </div>
         
-        <div className={`flex flex-col items-center bg-white ${isCompact ? 'px-4 py-2' : 'px-6 py-3'} rounded-xl brutal-border brutal-shadow-sm`}>
-          <span className={`${isCompact ? 'text-3xl' : 'text-5xl'} font-black`}>{snapshot.score}<span className={`${isCompact ? 'text-lg' : 'text-2xl'} text-gray-400`}>/10</span></span>
-          <span className={`font-bold uppercase tracking-wider ${isCompact ? 'text-[10px]' : 'text-sm'} ${getScoreTextColor(snapshot.score)}`}>
+        <div className={`flex flex-col items-center bg-white ${isCompact ? 'px-3 py-1.5 sm:px-4 py-2' : 'px-4 py-2 sm:px-6 py-3'} rounded-xl brutal-border brutal-shadow-sm w-full sm:w-auto`}>
+          <span className={`${isCompact ? 'text-2xl sm:text-3xl' : 'text-4xl sm:text-5xl'} font-black leading-none`}>{snapshot.score}<span className={`${isCompact ? 'text-sm sm:text-lg' : 'text-xl sm:text-2xl'} text-gray-400`}>/10</span></span>
+          <span className={`font-bold uppercase tracking-wider ${isCompact ? 'text-[8px] sm:text-[10px]' : 'text-xs sm:text-sm'} ${getScoreTextColor(snapshot.score)}`}>
             {snapshot.label}
           </span>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className={`${isCompact ? 'p-4' : 'p-6'} space-y-6 bg-white`}>
+      <div className={`${isCompact ? 'p-3 sm:p-4' : 'p-4 sm:p-6'} space-y-6 bg-white`}>
         
         {/* Callout */}
         <div className="bg-[#5ce1e6] p-3 rounded-xl brutal-border brutal-shadow-sm flex items-start gap-3">
@@ -340,22 +340,22 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
         </div>
 
         {/* What to Pack Section - Magazine Style */}
-        <div className="mt-12 pt-12 border-t-8 border-[#1e1e24] relative">
+        <div className="mt-8 sm:mt-12 pt-8 sm:pt-12 border-t-8 border-[#1e1e24] relative">
           {/* Retro Badge */}
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#ff5757] text-white px-6 py-2 border-4 border-[#1e1e24] rotate-2 z-10 font-black uppercase tracking-widest text-sm shadow-[4px_4px_0px_0px_#1e1e24]">
+          <div className="absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 bg-[#ff5757] text-white px-4 sm:px-6 py-1.5 sm:py-2 border-4 border-[#1e1e24] rotate-2 z-10 font-black uppercase tracking-widest text-xs sm:text-sm shadow-[4px_4px_0px_0px_#1e1e24] whitespace-nowrap">
             Packing Guide
           </div>
 
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex flex-col md:flex-row gap-6 sm:gap-8">
             {/* Left Column: Big Title & Intro */}
-            <div className="md:w-1/3 space-y-6">
-              <h3 className="text-6xl font-serif italic font-black leading-none tracking-tighter text-[#1e1e24]">
-                The <span className="block text-7xl not-italic font-sans uppercase">Pack</span> List
+            <div className="md:w-1/3 space-y-4 sm:space-y-6">
+              <h3 className="text-4xl sm:text-6xl font-serif italic font-black leading-none tracking-tighter text-[#1e1e24]">
+                The <span className="block text-5xl sm:text-7xl not-italic font-sans uppercase">Pack</span> List
               </h3>
-              <p className="text-sm font-bold leading-relaxed text-gray-600 border-l-4 border-[#ffde59] pl-4">
+              <p className="text-xs sm:text-sm font-bold leading-relaxed text-gray-600 border-l-4 border-[#ffde59] pl-4">
                 Our unfiltered guide to what you actually need for {destination.split(',')[0]} in {month}. No fluff, just the essentials.
               </p>
-              <div className="p-4 bg-[#ffde59] border-4 border-[#1e1e24] -rotate-1 hidden md:block shadow-[4px_4px_0px_0px_#1e1e24]">
+              <div className="p-3 sm:p-4 bg-[#ffde59] border-4 border-[#1e1e24] -rotate-1 hidden md:block shadow-[4px_4px_0px_0px_#1e1e24]">
                 <p className="text-[10px] font-black uppercase tracking-widest text-center">Verified by TripIntel</p>
               </div>
             </div>
@@ -363,42 +363,42 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
             {/* Right Column: The Grid */}
             <div className="md:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Essentials */}
-              <div className="bg-white p-6 border-4 border-[#1e1e24] relative group shadow-[4px_4px_0px_0px_#1e1e24]">
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-white font-black border-2 border-[#1e1e24] rotate-12 group-hover:rotate-0 transition-transform">01</div>
-                <h4 className="font-serif italic text-2xl mb-4 border-b-2 border-blue-100 pb-2">Essentials</h4>
-                <ul className="space-y-3">
+              <div className="bg-white p-4 sm:p-6 border-4 border-[#1e1e24] relative group shadow-[4px_4px_0px_0px_#1e1e24]">
+                <div className="absolute -top-3 -right-3 w-8 h-8 sm:w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-white font-black border-2 border-[#1e1e24] rotate-12 group-hover:rotate-0 transition-transform text-xs sm:text-base">01</div>
+                <h4 className="font-serif italic text-xl sm:text-2xl mb-3 sm:mb-4 border-b-2 border-blue-100 pb-2">Essentials</h4>
+                <ul className="space-y-2 sm:space-y-3">
                   {snapshot.packingList.essentials.map((item, i) => (
                     <li key={i} className="flex items-center gap-3 group/item">
-                      <div className="w-2 h-2 bg-blue-400 rotate-45 group-hover/item:rotate-90 transition-transform"></div>
-                      <span className="text-sm font-bold tracking-tight">{item}</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 h-2 bg-blue-400 rotate-45 group-hover/item:rotate-90 transition-transform"></div>
+                      <span className="text-xs sm:text-sm font-bold tracking-tight">{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               {/* Clothing */}
-              <div className="bg-white p-6 border-4 border-[#1e1e24] relative group shadow-[4px_4px_0px_0px_#1e1e24]">
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-green-400 rounded-full flex items-center justify-center text-white font-black border-2 border-[#1e1e24] -rotate-12 group-hover:rotate-0 transition-transform">02</div>
-                <h4 className="font-serif italic text-2xl mb-4 border-b-2 border-green-100 pb-2">Clothing</h4>
-                <ul className="space-y-3">
+              <div className="bg-white p-4 sm:p-6 border-4 border-[#1e1e24] relative group shadow-[4px_4px_0px_0px_#1e1e24]">
+                <div className="absolute -top-3 -right-3 w-8 h-8 sm:w-10 h-10 bg-green-400 rounded-full flex items-center justify-center text-white font-black border-2 border-[#1e1e24] -rotate-12 group-hover:rotate-0 transition-transform text-xs sm:text-base">02</div>
+                <h4 className="font-serif italic text-xl sm:text-2xl mb-3 sm:mb-4 border-b-2 border-green-100 pb-2">Clothing</h4>
+                <ul className="space-y-2 sm:space-y-3">
                   {snapshot.packingList.clothing.map((item, i) => (
                     <li key={i} className="flex items-center gap-3 group/item">
-                      <div className="w-2 h-2 bg-green-400 rotate-45 group-hover/item:rotate-90 transition-transform"></div>
-                      <span className="text-sm font-bold tracking-tight">{item}</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 h-2 bg-green-400 rotate-45 group-hover/item:rotate-90 transition-transform"></div>
+                      <span className="text-xs sm:text-sm font-bold tracking-tight">{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               {/* Extras */}
-              <div className="bg-[#1e1e24] text-white p-6 border-4 border-[#1e1e24] relative group sm:col-span-2 shadow-[4px_4px_0px_0px_#ff914d]">
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-[#ff914d] rounded-full flex items-center justify-center text-[#1e1e24] font-black border-2 border-[#1e1e24] rotate-6 group-hover:rotate-0 transition-transform">03</div>
-                <h4 className="font-serif italic text-2xl mb-4 border-b-2 border-gray-700 pb-2">Helpful Extras</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+              <div className="bg-[#1e1e24] text-white p-4 sm:p-6 border-4 border-[#1e1e24] relative group sm:col-span-2 shadow-[4px_4px_0px_0px_#ff914d]">
+                <div className="absolute -top-3 -right-3 w-8 h-8 sm:w-10 h-10 bg-[#ff914d] rounded-full flex items-center justify-center text-[#1e1e24] font-black border-2 border-[#1e1e24] rotate-6 group-hover:rotate-0 transition-transform text-xs sm:text-base">03</div>
+                <h4 className="font-serif italic text-xl sm:text-2xl mb-3 sm:mb-4 border-b-2 border-gray-700 pb-2">Helpful Extras</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 sm:gap-y-3">
                   {snapshot.packingList.extras.map((item, i) => (
                     <div key={i} className="flex items-center gap-3 group/item">
-                      <div className="w-2 h-2 bg-[#ff914d] rotate-45 group-hover/item:rotate-90 transition-transform"></div>
-                      <span className="text-sm font-bold tracking-tight">{item}</span>
+                      <div className="w-1.5 h-1.5 sm:w-2 h-2 bg-[#ff914d] rotate-45 group-hover/item:rotate-90 transition-transform"></div>
+                      <span className="text-xs sm:text-sm font-bold tracking-tight">{item}</span>
                     </div>
                   ))}
                 </div>
