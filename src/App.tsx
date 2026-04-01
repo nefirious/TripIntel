@@ -3,35 +3,42 @@ import { SearchForm } from './components/SearchForm';
 import { SnapshotCard } from './components/SnapshotCard';
 import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
+import { SchoolQualityCard } from './components/SchoolQualityCard';
+import { BusinessQualityCard } from './components/BusinessQualityCard';
 import { getTravelSnapshot, TravelSnapshot } from './services/gemini';
 import { getAirportStatus, AirportStatus } from './services/airport';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
-import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check } from 'lucide-react';
+import { getSchoolQualitySnapshot, SchoolQualitySnapshot } from './services/schools';
+import { getBusinessSnapshot, BusinessSnapshot } from './services/business';
+import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check, Plane, GraduationCap, TrendingUp, Briefcase } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
 
 const FEATURED_CITIES = [
-  "London, UK",
-  "Paris, France",
-  "New York City, USA",
-  "Chicago, USA",
-  "Amsterdam, Netherlands",
-  "Venice, Italy"
+  "Kyoto, Japan",
+  "Rome, Italy",
+  "Bangkok, Thailand",
+  "Washington DC, USA",
+  "Seville, Spain",
+  "Cancun, Mexico"
 ];
 
 // Mock data for initial featured cards to avoid massive API calls on load
 // In a real app, these would be cached or pre-generated
 const INITIAL_FEATURED_DATA = [
-  { city: "London, UK", score: 4, weatherIcon: 'rain' as const, temperature: "9°C" },
-  { city: "Paris, France", score: 5, weatherIcon: 'cloud' as const, temperature: "11°C" },
-  { city: "New York City, USA", score: 4, weatherIcon: 'cloud' as const, temperature: "7°C" },
-  { city: "Chicago, USA", score: 3, weatherIcon: 'cloud' as const, temperature: "4°C" },
-  { city: "Amsterdam, Netherlands", score: 4, weatherIcon: 'rain' as const, temperature: "8°C" },
-  { city: "Venice, Italy", score: 5, weatherIcon: 'cloud' as const, temperature: "12°C" },
+  { city: "Kyoto, Japan", score: 9.8, weatherIcon: 'sun' as const, temperature: "18°C" },
+  { city: "Rome, Italy", score: 9.5, weatherIcon: 'sun' as const, temperature: "19°C" },
+  { city: "Washington DC, USA", score: 9.4, weatherIcon: 'sun' as const, temperature: "17°C" },
+  { city: "Seville, Spain", score: 9.7, weatherIcon: 'sun' as const, temperature: "24°C" },
+  { city: "Amsterdam, Netherlands", score: 9.2, weatherIcon: 'sun' as const, temperature: "14°C" },
+  { city: "Santorini, Greece", score: 9.1, weatherIcon: 'sun' as const, temperature: "20°C" },
 ];
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'travel' | 'schools' | 'business'>('travel');
   const [snapshot, setSnapshot] = useState<TravelSnapshot | null>(null);
   const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
+  const [schoolSnapshot, setSchoolSnapshot] = useState<SchoolQualitySnapshot | null>(null);
+  const [businessSnapshot, setBusinessSnapshot] = useState<BusinessSnapshot | null>(null);
   const [comparisonSnapshot, setComparisonSnapshot] = useState<TravelSnapshot | null>(null);
   const [comparisonAirportStatus, setComparisonAirportStatus] = useState<AirportStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,8 +82,44 @@ export default function App() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const metaData = {
+      travel: {
+        title: "TripIntel | Unfiltered Travel Intelligence & Real-Time Destination Reports",
+        description: "Get the real truth about global travel destinations. TripIntel provides unfiltered intelligence on crowds, pricing, and local realities before you book."
+      },
+      schools: {
+        title: "TripIntel Schools | Global Education Quality & School Comparison Database",
+        description: "Compare school quality across global education hubs. Analyze curriculums, teacher ratings, and infrastructure with TripIntel's blunt school reports."
+      },
+      business: {
+        title: "TripIntel Business | Global Market Entry & Business Intelligence for Founders",
+        description: "Navigate global business markets with real intel. TripIntel provides blunt data on registration hurdles, ownership rules, and commercial market realities."
+      }
+    };
+
+    const currentMeta = metaData[activeTab];
+    document.title = currentMeta.title;
+    
+    const updateMeta = (name: string, content: string, attr: string = 'name') => {
+      let element = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attr, name);
+        document.head.appendChild(element);
+      }
+      element.setAttribute('content', content);
+    };
+
+    updateMeta('description', currentMeta.description);
+    updateMeta('og:title', currentMeta.title, 'property');
+    updateMeta('og:description', currentMeta.description, 'property');
+    updateMeta('twitter:title', currentMeta.title);
+    updateMeta('twitter:description', currentMeta.description);
+  }, [activeTab]);
   
-  const currentMonth = MONTHS[new Date().getMonth()];
+  const currentMonth = "April";
 
   const handleShare = async () => {
     const shareData = {
@@ -112,6 +155,8 @@ export default function App() {
     if (!isSecondCity) {
       setSnapshot(null);
       setAirportStatus(null);
+      setSchoolSnapshot(null);
+      setBusinessSnapshot(null);
       setCurrentSearch({ destination, month });
     } else {
       setComparisonSearch({ destination, month });
@@ -121,17 +166,25 @@ export default function App() {
     window.scrollTo({ top: 400, behavior: 'smooth' });
 
     try {
-      const [snapshotData, airportData] = await Promise.all([
-        getTravelSnapshot(destination, month, activity),
-        getAirportStatus(destination)
-      ]);
+      if (activeTab === 'travel') {
+        const [snapshotData, airportData] = await Promise.all([
+          getTravelSnapshot(destination, month, activity),
+          getAirportStatus(destination)
+        ]);
 
-      if (isSecondCity) {
-        setComparisonSnapshot(snapshotData);
-        setComparisonAirportStatus(airportData);
-      } else {
-        setSnapshot(snapshotData);
-        setAirportStatus(airportData);
+        if (isSecondCity) {
+          setComparisonSnapshot(snapshotData);
+          setComparisonAirportStatus(airportData);
+        } else {
+          setSnapshot(snapshotData);
+          setAirportStatus(airportData);
+        }
+      } else if (activeTab === 'schools') {
+        const schoolData = await getSchoolQualitySnapshot(destination);
+        setSchoolSnapshot(schoolData);
+      } else if (activeTab === 'business') {
+        const businessData = await getBusinessSnapshot(destination);
+        setBusinessSnapshot(businessData);
       }
     } catch (err: any) {
       console.error(err);
@@ -195,24 +248,80 @@ export default function App() {
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto">
           <div className="inline-block bg-[#ffde59] px-4 py-1 rounded-full brutal-border mb-4 font-black uppercase tracking-widest text-xs">
-            Exploring {DESTINATIONS.length} Global Destinations
+            {activeTab === 'travel' 
+              ? `Exploring ${DESTINATIONS.length} Global Destinations` 
+              : activeTab === 'schools' 
+                ? 'Analyzing Global Education Hubs' 
+                : 'Mapping Global Business Markets'}
           </div>
           <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6 leading-[0.9]">
-            Know <span className="text-[#ff5757]">Before</span> <br/> You Go
+            {activeTab === 'travel' ? (
+              <>Know <span className="text-[#ff5757]">Before</span> <br/> You Go</>
+            ) : activeTab === 'schools' ? (
+              <>Education <span className="text-[#5ce1e6]">Without</span> <br/> The Fluff</>
+            ) : (
+              <>Launch <span className="text-[#ffde59]">With</span> <br/> Real Intel</>
+            )}
           </h2>
           <p className="text-xl font-bold text-gray-600 mb-8">
-            Don't just check the temperature. Discover the real truth about crowds, pricing, and local realities.
+            {activeTab === 'travel' 
+              ? "Unfiltered travel intelligence. Discover the real truth about crowds, pricing, and local realities before you book your next trip."
+              : activeTab === 'schools'
+                ? "The ultimate school quality database. Compare curriculums, teacher ratings, and infrastructure for global education hubs."
+                : "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."}
           </p>
-          <SearchForm onSearch={handleSearch} isLoading={isLoading} />
+
+          {/* Tab Switcher */}
+          <div className="flex justify-center mb-8">
+            <div className="flex p-1 bg-gray-100 brutal-border rounded-xl">
+              <button 
+                onClick={() => {
+                  setActiveTab('travel');
+                  setSnapshot(null);
+                  setSchoolSnapshot(null);
+                }}
+                className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${activeTab === 'travel' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+              >
+                <Compass className="w-4 h-4" />
+                Travel
+              </button>
+              <button 
+                onClick={() => {
+                  setActiveTab('schools');
+                  setSnapshot(null);
+                  setSchoolSnapshot(null);
+                  setBusinessSnapshot(null);
+                }}
+                className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${activeTab === 'schools' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+              >
+                <GraduationCap className="w-4 h-4" />
+                Schools
+              </button>
+              <button 
+                onClick={() => {
+                  setActiveTab('business');
+                  setSnapshot(null);
+                  setSchoolSnapshot(null);
+                  setBusinessSnapshot(null);
+                }}
+                className={`px-6 py-2 rounded-lg font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all ${activeTab === 'business' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+              >
+                <Briefcase className="w-4 h-4" />
+                Business
+              </button>
+            </div>
+          </div>
+          
+          <SearchForm onSearch={handleSearch} isLoading={isLoading} mode={activeTab} />
         </div>
 
         {/* Results Section */}
-        {(isLoading || snapshot || error) && (
+        {(isLoading || snapshot || schoolSnapshot || businessSnapshot || error) && (
           <div className="w-full space-y-8 min-h-[400px]">
             <div className="flex items-center gap-3 justify-center">
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
               <h3 className="font-black uppercase tracking-widest text-xl">
-                {isComparing ? 'Comparison View' : 'Your Travel Intel'}
+                {activeTab === 'travel' ? (isComparing ? 'Comparison View' : 'Your Travel Intel') : activeTab === 'schools' ? 'School Quality Report' : 'Business Intelligence Report'}
               </h3>
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
             </div>
@@ -221,7 +330,9 @@ export default function App() {
               <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
                 <div className="w-16 h-16 border-8 border-[#ffde59] border-t-[#1e1e24] rounded-full animate-spin"></div>
                 <div className="space-y-2">
-                  <p className="font-black uppercase tracking-widest animate-pulse">Consulting the travel gods...</p>
+                  <p className="font-black uppercase tracking-widest animate-pulse">
+                    Consulting the travel gods...
+                  </p>
                   <p className="text-xs font-bold opacity-60 uppercase tracking-tight">Real-time intelligence can take up to 2 minutes to fetch</p>
                 </div>
               </div>
@@ -239,8 +350,8 @@ export default function App() {
               </div>
             )}
 
-            <div className={`grid grid-cols-1 ${isComparing ? 'lg:grid-cols-2' : ''} gap-8`}>
-              {snapshot && (
+            <div className={`grid grid-cols-1 ${isComparing && activeTab === 'travel' ? 'lg:grid-cols-2' : ''} gap-8`}>
+              {snapshot && activeTab === 'travel' && (
                 <div className="space-y-4">
                   <SnapshotCard 
                     snapshot={snapshot} 
@@ -262,7 +373,19 @@ export default function App() {
                 </div>
               )}
 
-              {isComparing && (
+              {schoolSnapshot && activeTab === 'schools' && (
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <SchoolQualityCard snapshot={schoolSnapshot} />
+                </div>
+              )}
+
+              {businessSnapshot && activeTab === 'business' && (
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <BusinessQualityCard snapshot={businessSnapshot} />
+                </div>
+              )}
+
+              {isComparing && activeTab === 'travel' && (
                 <div className="space-y-4">
                   {!comparisonSnapshot && isLoading ? (
                     <div className="brutal-card h-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-gray-50 text-center">
@@ -303,25 +426,89 @@ export default function App() {
         )}
 
         {/* Featured Grid */}
-        {!snapshot && !isLoading && (
+        {!snapshot && !schoolSnapshot && !businessSnapshot && !isLoading && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
-                <Sparkles className="w-8 h-8 text-[#ff5757]" /> Avoid in {currentMonth}
+                {activeTab === 'travel' ? (
+                  <>
+                    <Sparkles className="w-8 h-8 text-[#ff5757]" /> Featured in {currentMonth}
+                  </>
+                ) : activeTab === 'schools' ? (
+                  <>
+                    <GraduationCap className="w-8 h-8 text-[#5ce1e6]" /> Top Education Hubs
+                  </>
+                ) : (
+                  <>
+                    <Briefcase className="w-8 h-8 text-[#ffde59]" /> Emerging Business Hubs
+                  </>
+                )}
               </h3>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {INITIAL_FEATURED_DATA.map((data) => (
-                <CityCard 
-                  key={data.city}
-                  city={data.city}
-                  score={data.score}
-                  weatherIcon={data.weatherIcon}
-                  temperature={data.temperature}
-                  onClick={() => handleSearch(data.city, currentMonth)}
-                />
-              ))}
+              {activeTab === 'travel' ? (
+                INITIAL_FEATURED_DATA.map((data) => (
+                  <CityCard 
+                    key={data.city}
+                    city={data.city}
+                    score={data.score}
+                    weatherIcon={data.weatherIcon}
+                    temperature={data.temperature}
+                    onClick={() => handleSearch(data.city, currentMonth)}
+                  />
+                ))
+              ) : activeTab === 'schools' ? (
+                [
+                  { city: "London, UK", score: 9.2 },
+                  { city: "Boston, USA", score: 9.5 },
+                  { city: "Melbourne, Australia", score: 9.1 },
+                  { city: "Singapore", score: 9.6 },
+                  { city: "Zurich, Switzerland", score: 9.8 },
+                  { city: "Tokyo, Japan", score: 9.4 }
+                ].map((data) => (
+                  <div 
+                    key={data.city}
+                    onClick={() => handleSearch(data.city, currentMonth)}
+                    className="brutal-card bg-white p-6 group cursor-pointer hover:-translate-y-2 transition-transform"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-2xl font-black uppercase tracking-tight">{data.city}</h3>
+                      <div className="w-12 h-12 rounded-lg border-2 border-[#1e1e24] bg-[#5ce1e6] flex items-center justify-center font-black shadow-[2px_2px_0px_0px_#1e1e24]">
+                        {data.score}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#5ce1e6] group-hover:gap-4 transition-all">
+                      View School Report <TrendingUp className="w-4 h-4" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                [
+                  { city: "Hong Kong, China", score: 9.4 },
+                  { city: "Singapore", score: 9.9 },
+                  { city: "Tallinn, Estonia", score: 9.3 },
+                  { city: "Austin, USA", score: 9.1 },
+                  { city: "Riyadh, Saudi Arabia", score: 8.8 },
+                  { city: "Lisbon, Portugal", score: 8.5 }
+                ].map((data) => (
+                  <div 
+                    key={data.city}
+                    onClick={() => handleSearch(data.city, currentMonth)}
+                    className="brutal-card bg-white p-6 group cursor-pointer hover:-translate-y-2 transition-transform"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-2xl font-black uppercase tracking-tight">{data.city}</h3>
+                      <div className="w-12 h-12 rounded-lg border-2 border-[#1e1e24] bg-[#ffde59] flex items-center justify-center font-black shadow-[2px_2px_0px_0px_#1e1e24]">
+                        {data.score}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#b39410] group-hover:gap-4 transition-all">
+                      View Business Intel <TrendingUp className="w-4 h-4" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

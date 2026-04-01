@@ -6,9 +6,10 @@ interface SearchFormProps {
   onSearch: (destination: string, month: string, activity: string) => void;
   isLoading: boolean;
   compact?: boolean;
+  mode?: 'travel' | 'schools' | 'business';
 }
 
-export function SearchForm({ onSearch, isLoading, compact = false }: SearchFormProps) {
+export function SearchForm({ onSearch, isLoading, compact = false, mode = 'travel' }: SearchFormProps) {
   const [destination, setDestination] = useState('');
   const [month, setMonth] = useState(MONTHS[new Date().getMonth()]);
   const [activity, setActivity] = useState(ACTIVITIES[0]);
@@ -75,13 +76,15 @@ export function SearchForm({ onSearch, isLoading, compact = false }: SearchFormP
       <div className={`flex ${compact ? 'flex-col' : 'flex-col md:flex-row'} gap-4`}>
         
         <div className="flex-1 flex flex-col gap-1 relative">
-          <label className={`font-black uppercase text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>Where to?</label>
+          <label className={`font-black uppercase text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>
+            {mode === 'travel' ? 'Where to?' : mode === 'schools' ? 'Which City?' : 'Business Hub?'}
+          </label>
           <div className="relative">
             <input 
               type="text"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              placeholder="Start typing a city..."
+              placeholder={mode === 'travel' ? "Start typing a city..." : mode === 'schools' ? "Enter city for school data..." : "Enter city for business intel..."}
               className="w-full p-3 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50"
             />
             {destination && (
@@ -114,18 +117,20 @@ export function SearchForm({ onSearch, isLoading, compact = false }: SearchFormP
           )}
         </div>
 
-        <div className="flex-1 flex flex-col gap-1">
-          <label className={`font-black uppercase text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>When?</label>
-          <select 
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-full p-3 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 appearance-none cursor-pointer"
-          >
-            {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
+        {mode === 'travel' && (
+          <div className="flex-1 flex flex-col gap-1">
+            <label className={`font-black uppercase text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>When?</label>
+            <select 
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="w-full p-3 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 appearance-none cursor-pointer"
+            >
+              {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+        )}
 
-        {!compact && (
+        {mode === 'travel' && !compact && (
           <div className="flex-1 flex flex-col gap-1">
             <label className="font-black uppercase text-sm text-white tracking-wider">Vibe?</label>
             <select 
@@ -168,7 +173,7 @@ export function SearchForm({ onSearch, isLoading, compact = false }: SearchFormP
             ) : (
               <>
                 <Search className="w-5 h-5" />
-                {compact ? 'Add to Compare' : 'Check Timing'}
+                {compact ? 'Add to Compare' : mode === 'travel' ? 'Check Timing' : mode === 'schools' ? 'Evaluate Schools' : 'Get Business Intel'}
               </>
             )}
           </button>
