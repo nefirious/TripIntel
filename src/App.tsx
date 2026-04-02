@@ -46,7 +46,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [currentSearch, setCurrentSearch] = useState({ destination: '', month: '' });
   const [comparisonSearch, setComparisonSearch] = useState({ destination: '', month: '' });
-  const [legalModal, setLegalModal] = useState<{ isOpen: boolean; type: 'privacy' | 'terms' | 'liability' }>({
+  const [legalModal, setLegalModal] = useState<{ isOpen: boolean; type: 'privacy' | 'terms' | 'liability' | 'about' }>({
     isOpen: false,
     type: 'privacy'
   });
@@ -614,11 +614,46 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest text-[#ffde59]">{activeQueries.toLocaleString()}+ Active Queries</span>
+              <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest text-[#ffde59]">Real-Time Intelligence Streams</span>
             </div>
             <div className="flex items-center gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-green-400">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
               System Status: Operational
+            </div>
+          </div>
+        </div>
+
+        {/* Our Services Section */}
+        <div className="mt-16 space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="h-1 flex-1 bg-[#1e1e24]"></div>
+            <h3 className="font-black uppercase tracking-widest text-xl">Our Intelligence Services</h3>
+            <div className="h-1 flex-1 bg-[#1e1e24]"></div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="brutal-card bg-white p-6 space-y-4">
+              <div className="w-12 h-12 bg-[#ff5757] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                <Globe className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-xl font-black uppercase tracking-tight">Unfiltered Travel</h4>
+              <p className="text-sm font-bold opacity-70">Real-time snapshots of global destinations. We track weather, crowds, and local safety advisories to give you the blunt truth before you book.</p>
+            </div>
+            
+            <div className="brutal-card bg-white p-6 space-y-4">
+              <div className="w-12 h-12 bg-[#5ce1e6] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-xl font-black uppercase tracking-tight">Global Education</h4>
+              <p className="text-sm font-bold opacity-70">Our new real-time school quality checker monitors educational institutions worldwide. Get instant data on curriculums, infrastructure, and teacher ratings.</p>
+            </div>
+            
+            <div className="brutal-card bg-white p-6 space-y-4">
+              <div className="w-12 h-12 bg-[#ffde59] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                <TrendingUp className="w-6 h-6 text-[#1e1e24]" />
+              </div>
+              <h4 className="text-xl font-black uppercase tracking-tight">Business Tracker</h4>
+              <p className="text-sm font-bold opacity-70">Real-time market intelligence for founders and investors. Track commercial registration hurdles, ownership rules, and market volatility as they happen for any city in the world.</p>
             </div>
           </div>
         </div>
@@ -668,6 +703,12 @@ export default function App() {
           </div>
           
           <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-[10px] sm:text-sm font-bold uppercase tracking-wider">
+            <button 
+              onClick={() => setLegalModal({ isOpen: true, type: 'about' })}
+              className="hover:text-[#ffde59] transition-colors"
+            >
+              About Us
+            </button>
             <button 
               onClick={() => setLegalModal({ isOpen: true, type: 'privacy' })}
               className="hover:text-[#ffde59] transition-colors"
