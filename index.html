@@ -39,6 +39,19 @@
         </div>
       </div>
     </div>
+    <script>
+      fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(data => {
+          fetch('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE', {
+            method: 'POST',
+            body: JSON.stringify({
+              country: data.country_name,
+              userAgent: navigator.userAgent
+            })
+          });
+        });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
