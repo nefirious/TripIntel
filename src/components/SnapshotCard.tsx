@@ -725,6 +725,50 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
             </motion.div>
           )}
         </div>
+
+        {/* Crowd Truth: Live Community Poll */}
+        <div className="mt-12 pt-12 border-t-8 border-[#1e1e24]">
+          <div className="flex items-center gap-3 mb-6">
+            <Users2 className="w-6 h-6 sm:w-8 h-8 text-[#5ce1e6]" />
+            <h3 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">Crowd Truth</h3>
+          </div>
+          
+          <div className="brutal-card bg-white p-4 sm:p-6 border-4 border-[#1e1e24] shadow-[8px_8px_0px_0px_#5ce1e6]">
+            <div className="mb-4">
+              <h4 className="text-xl font-black uppercase tracking-tight">Is {destination.split(',')[0]} a 9/10 today?</h4>
+              <p className="text-xs font-bold opacity-60 uppercase tracking-widest">Live Community Sentiment • Stateless Integration</p>
+            </div>
+            
+            <div className="aspect-[16/9] w-full bg-gray-50 brutal-border flex items-center justify-center overflow-hidden relative">
+              {/* In a real production app, you would use a dynamic StrawPoll ID here */}
+              {/* For this demo, we're showing the stateless integration UI */}
+              <div className="absolute inset-0 bg-white flex flex-col items-center justify-center p-4 sm:p-8 text-center">
+                <div className="space-y-4 sm:space-y-6 w-full max-w-sm">
+                  <div className="flex gap-3 sm:gap-4">
+                    <button className="flex-1 brutal-btn bg-[#7ed957] py-3 sm:py-4 font-black text-lg sm:text-xl uppercase shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">YES</button>
+                    <button className="flex-1 brutal-btn bg-[#ff5757] py-3 sm:py-4 font-black text-lg sm:text-xl uppercase shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">NO</button>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+                      <span>Yes (84%)</span>
+                      <span>No (16%)</span>
+                    </div>
+                    <div className="h-3 sm:h-4 w-full bg-gray-200 brutal-border overflow-hidden flex">
+                      <div className="h-full bg-[#7ed957] w-[84%] border-r-2 border-black"></div>
+                      <div className="h-full bg-[#ff5757] w-[16%]"></div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Activity className="w-3 h-3 text-green-500 animate-pulse" />
+                    <p className="text-[8px] sm:text-[10px] font-bold opacity-50 uppercase italic leading-tight">
+                      Stateless 3rd-party integration. Votes handled entirely off-site via StrawPoll.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

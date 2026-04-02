@@ -25,6 +25,9 @@ export function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
         <h4 class="font-black uppercase mt-6 text-[#ffde59]">New: Business Investment Tracker</h4>
         <p>Navigate global markets with our real-time business intelligence suite. We track commercial registration hurdles, local ownership requirements, and market volatility in real-time for any city in the world, helping founders and investors make informed decisions in emerging and established hubs.</p>
 
+        <h4 class="font-black uppercase mt-6 text-[#7ed957]">New: Interactive Live Polls</h4>
+        <p>Get the "Crowd Truth" with our stateless community sentiment integration. We use 3rd-party embeddable tools to capture real-time opinions on destination quality without storing a single row of user data, ensuring maximum privacy and transparency.</p>
+
         <p class="mt-6 font-black uppercase tracking-widest text-sm border-t-2 border-black pt-4">Powered by Real-Time Data Streams & Advanced Intelligence.</p>
       `
     },

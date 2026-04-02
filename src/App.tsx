@@ -75,6 +75,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Re-parse XFBML when component mounts or tab changes to ensure Facebook plugin renders
+    if (window.FB) {
+      window.FB.XFBML.parse();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setActiveQueries(prev => {
         const change = Math.floor(Math.random() * 7) - 3; // -3 to +3
@@ -661,6 +668,32 @@ export default function App() {
               </div>
               <h4 className="text-xl font-black uppercase tracking-tight">Business Tracker</h4>
               <p className="text-sm font-bold opacity-70">Real-time market intelligence for founders and investors. Track commercial registration hurdles, ownership rules, and market volatility as they happen for any city in the world.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Facebook Page Section */}
+        <div className="mt-12 flex flex-col items-center gap-6">
+          <div className="flex items-center gap-3 w-full">
+            <div className="h-1 flex-1 bg-[#1e1e24]"></div>
+            <h3 className="font-black uppercase tracking-widest text-xl">Join the Community</h3>
+            <div className="h-1 flex-1 bg-[#1e1e24]"></div>
+          </div>
+          <div className="brutal-card bg-white p-2 sm:p-4 inline-block shadow-[8px_8px_0px_0px_#1e1e24]">
+            <div 
+              className="fb-page" 
+              data-href="https://www.facebook.com/safetyindex" 
+              data-tabs="timeline" 
+              data-width="500" 
+              data-height="500" 
+              data-small-header="false" 
+              data-adapt-container-width="true" 
+              data-hide-cover="false" 
+              data-show-facepile="true"
+            >
+              <blockquote cite="https://www.facebook.com/safetyindex" className="fb-xfbml-parse-ignore">
+                <a href="https://www.facebook.com/safetyindex">Global Safety Index</a>
+              </blockquote>
             </div>
           </div>
         </div>
