@@ -204,6 +204,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* Top Banner */}
+      <div className="bg-[#1e1e24] text-[#ffde59] py-1.5 px-4 text-center border-b-2 border-[#1e1e24]">
+        <p className="text-[9px] sm:text-[11px] font-black uppercase tracking-[0.2em]">
+          TripIntel.net is a Global Mobility Hub, providing data-driven insights for anyone moving across borders.
+        </p>
+      </div>
+
       {/* Header */}
       <header className="bg-white border-b-4 border-[#1e1e24] py-3 px-4 sm:px-6 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">

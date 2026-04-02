@@ -12,7 +12,9 @@ export function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
     about: {
       title: "About TripIntel",
       body: `
-        <p>TripIntel is a cutting-edge real-time intelligence platform designed for the modern global citizen. We provide unfiltered, data-driven insights into travel, education, and business markets worldwide.</p>
+        <p>TripIntel.net is a <strong>Global Mobility Hub</strong>, providing data-driven information and insights for anyone moving across borders, whether for a week of sightseeing or a permanent move for work and family.</p>
+        
+        <p class="mt-4">As a cutting-edge real-time intelligence platform designed for the modern global citizen, we provide unfiltered, data-driven insights into travel, education, and business markets worldwide.</p>
         
         <h4 class="font-black uppercase mt-6 text-[#ff5757]">Our Core Mission</h4>
         <p>In an era of curated social media and biased reviews, TripIntel delivers the blunt truth. Our systems analyze thousands of live data points to give you the real story before you commit your time or capital.</p>
