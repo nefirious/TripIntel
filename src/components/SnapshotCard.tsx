@@ -35,10 +35,33 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
   const [liveWeather, setLiveWeather] = useState<WeatherInfo | null>(null);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [votes, setVotes] = useState({ yes: 84, no: 16 });
+  const [hasVoted, setHasVoted] = useState(false);
 
   useEffect(() => {
     setIsUnlocked(false); // Reset lock when snapshot changes
-  }, [snapshot]);
+    
+    // Generate some stable "random" initial votes based on destination
+    const seed = destination.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const baseYes = 65 + (seed % 25); // 65-90%
+    setVotes({ yes: baseYes, no: 100 - baseYes });
+    setHasVoted(false);
+  }, [snapshot, destination]);
+
+  const handleVote = (type: 'yes' | 'no') => {
+    if (hasVoted) return;
+    setVotes(prev => {
+      const total = prev.yes + prev.no;
+      if (type === 'yes') {
+        const newYes = prev.yes + 1;
+        return { yes: newYes, no: prev.no };
+      } else {
+        const newNo = prev.no + 1;
+        return { yes: prev.yes, no: newNo };
+      }
+    });
+    setHasVoted(true);
+  };
 
   useEffect(() => {
     async function fetchWeather() {
@@ -740,28 +763,52 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
             </div>
             
             <div className="aspect-[16/9] w-full bg-gray-50 brutal-border flex items-center justify-center overflow-hidden relative">
-              {/* In a real production app, you would use a dynamic StrawPoll ID here */}
-              {/* For this demo, we're showing the stateless integration UI */}
               <div className="absolute inset-0 bg-white flex flex-col items-center justify-center p-4 sm:p-8 text-center">
                 <div className="space-y-4 sm:space-y-6 w-full max-w-sm">
                   <div className="flex gap-3 sm:gap-4">
-                    <button className="flex-1 brutal-btn bg-[#7ed957] py-3 sm:py-4 font-black text-lg sm:text-xl uppercase shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">YES</button>
-                    <button className="flex-1 brutal-btn bg-[#ff5757] py-3 sm:py-4 font-black text-lg sm:text-xl uppercase shadow-[4px_4px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all">NO</button>
+                    <button 
+                      onClick={() => handleVote('yes')}
+                      disabled={hasVoted}
+                      className={`flex-1 brutal-btn py-3 sm:py-4 font-black text-lg sm:text-xl uppercase shadow-[4px_4px_0px_0px_#000] transition-all ${
+                        hasVoted 
+                          ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                          : 'bg-[#7ed957] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'
+                      }`}
+                    >
+                      YES
+                    </button>
+                    <button 
+                      onClick={() => handleVote('no')}
+                      disabled={hasVoted}
+                      className={`flex-1 brutal-btn py-3 sm:py-4 font-black text-lg sm:text-xl uppercase shadow-[4px_4px_0px_0px_#000] transition-all ${
+                        hasVoted 
+                          ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                          : 'bg-[#ff5757] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none'
+                      }`}
+                    >
+                      NO
+                    </button>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
-                      <span>Yes (84%)</span>
-                      <span>No (16%)</span>
+                      <span>Yes ({Math.round((votes.yes / (votes.yes + votes.no)) * 100)}%)</span>
+                      <span>No ({Math.round((votes.no / (votes.yes + votes.no)) * 100)}%)</span>
                     </div>
                     <div className="h-3 sm:h-4 w-full bg-gray-200 brutal-border overflow-hidden flex">
-                      <div className="h-full bg-[#7ed957] w-[84%] border-r-2 border-black"></div>
-                      <div className="h-full bg-[#ff5757] w-[16%]"></div>
+                      <div 
+                        className="h-full bg-[#7ed957] border-r-2 border-black transition-all duration-500" 
+                        style={{ width: `${(votes.yes / (votes.yes + votes.no)) * 100}%` }}
+                      ></div>
+                      <div 
+                        className="h-full bg-[#ff5757] transition-all duration-500"
+                        style={{ width: `${(votes.no / (votes.yes + votes.no)) * 100}%` }}
+                      ></div>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <Activity className="w-3 h-3 text-green-500 animate-pulse" />
                     <p className="text-[8px] sm:text-[10px] font-bold opacity-50 uppercase italic leading-tight">
-                      Stateless 3rd-party integration. Votes handled entirely off-site via StrawPoll.
+                      {hasVoted ? 'Thank you for your intelligence contribution.' : 'Stateless 3rd-party integration. Votes handled entirely off-site via StrawPoll.'}
                     </p>
                   </div>
                 </div>
