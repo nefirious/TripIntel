@@ -39,7 +39,7 @@ export const WEATHER_METADATA: Record<WeatherState, { icon: string; label: strin
  * Maps Open-Meteo WMO Weather interpretation codes to our custom states
  * https://open-meteo.com/en/docs
  */
-function mapWmoCodeToState(code: number, temp: number): WeatherState {
+function mapWmoCodeToState(code: number, temp: number, latitude: number): WeatherState {
   // Scorching check
   if (temp >= 35) return 'SCORCHING';
   
@@ -57,8 +57,20 @@ function mapWmoCodeToState(code: number, temp: number): WeatherState {
   
   // Default based on temp if clear/partly cloudy (0, 1, 2, 3)
   if (temp >= 20 && temp < 35) return 'SUNNY';
-  if (temp >= 15 && temp < 22) return 'SPRING';
-  if (temp >= 10 && temp < 20) return 'AUTUMN';
+
+  // Seasonal logic for mild temperatures
+  const month = new Date().getMonth(); // 0-11
+  const isNorthernHemisphere = latitude >= 0;
+  
+  // Spring: North (Mar-May: 2-4), South (Sep-Nov: 8-10)
+  const isSpring = isNorthernHemisphere 
+    ? (month >= 2 && month <= 4) 
+    : (month >= 8 && month <= 10);
+
+  if (temp >= 5 && temp < 22) {
+    return isSpring ? 'SPRING' : 'AUTUMN';
+  }
+  
   if (temp < 2) return 'SNOW';
   
   return 'SUNNY'; // Fallback
@@ -80,7 +92,7 @@ export async function getLiveWeather(city: string): Promise<WeatherInfo | null> 
     
     const temp = weatherData.current.temperature_2m;
     const code = weatherData.current.weather_code;
-    const state = mapWmoCodeToState(code, temp);
+    const state = mapWmoCodeToState(code, temp, latitude);
     const meta = WEATHER_METADATA[state];
     
     return {
