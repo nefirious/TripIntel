@@ -6,7 +6,7 @@ interface SearchFormProps {
   onSearch: (destination: string, month: string, activity: string) => void;
   isLoading: boolean;
   compact?: boolean;
-  mode?: 'travel' | 'schools' | 'business';
+  mode?: 'travel' | 'business';
 }
 
 export function SearchForm({ onSearch, isLoading, compact = false, mode = 'travel' }: SearchFormProps) {
@@ -77,14 +77,14 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
         
         <div className="flex-1 flex flex-col gap-1 relative">
           <label className={`font-black uppercase text-[10px] sm:text-sm ${compact ? 'text-gray-500' : 'text-white'} tracking-wider`}>
-            {mode === 'travel' ? 'Where to?' : mode === 'schools' ? 'Which City?' : 'Business Hub?'}
+            {mode === 'travel' ? 'Where to?' : 'Business Hub?'}
           </label>
           <div className="relative">
             <input 
               type="text"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              placeholder={mode === 'travel' ? "Start typing a city..." : mode === 'schools' ? "Enter city for school data..." : "Enter city for business intel..."}
+              placeholder={mode === 'travel' ? "Start typing a city..." : "Enter city for business intel..."}
               className="w-full p-3 sm:p-4 brutal-border rounded-xl font-bold bg-white focus:outline-none focus:ring-4 focus:ring-white/50 text-base sm:text-lg"
             />
             {destination && (
@@ -174,7 +174,7 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
               <>
                 <Search className="w-5 h-5 sm:w-6 h-6" />
                 <span className="uppercase tracking-widest font-black text-xs sm:text-sm">
-                  {compact ? 'Add to Compare' : mode === 'travel' ? 'Check Timing' : mode === 'schools' ? 'Evaluate Schools' : 'Get Business Intel'}
+                  {compact ? 'Add to Compare' : mode === 'travel' ? 'Check Timing' : 'Get Business Intel'}
                 </span>
               </>
             )}

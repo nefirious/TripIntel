@@ -20,12 +20,34 @@
         }
       },
       "required": ["city", "count"]
+    },
+    "ReliefLocation": {
+      "title": "ReliefLocation",
+      "description": "A public toilet or friendly business location.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "type": { "type": "string", "enum": ["public", "business", "department_store", "cafe", "library", "gas_station"] },
+        "isAccessible": { "type": "boolean" },
+        "hasBabyChanging": { "type": "boolean" },
+        "isGenderNeutral": { "type": "boolean" },
+        "addedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "lat", "lng", "type", "addedBy"]
     }
   },
   "firestore": {
     "/searches/{cityId}": {
       "schema": "SearchCount",
       "description": "Collection of search counts for cities."
+    },
+    "/relief_locations/{locationId}": {
+      "schema": "ReliefLocation",
+      "description": "Collection of public toilets and friendly businesses."
     }
   }
 }

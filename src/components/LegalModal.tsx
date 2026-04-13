@@ -14,13 +14,10 @@ export function LegalModal({ isOpen, onClose, type }: LegalModalProps) {
       body: `
         <p>TripIntel.net is a <strong>Global Mobility Hub</strong>, providing data-driven information and insights for anyone moving across borders, whether for a week of sightseeing or a permanent move for work and family.</p>
         
-        <p class="mt-4">As a cutting-edge real-time intelligence platform designed for the modern global citizen, we provide unfiltered, data-driven insights into travel, education, and business markets worldwide.</p>
+        <p class="mt-4">As a cutting-edge real-time intelligence platform designed for the modern global citizen, we provide unfiltered, data-driven insights into travel and business markets worldwide.</p>
         
         <h4 class="font-black uppercase mt-6 text-[#ff5757]">Our Core Mission</h4>
         <p>In an era of curated social media and biased reviews, TripIntel delivers the blunt truth. Our systems analyze thousands of live data points to give you the real story before you commit your time or capital.</p>
-
-        <h4 class="font-black uppercase mt-6 text-[#5ce1e6]">New: Global School Intelligence</h4>
-        <p>We've launched a first-of-its-kind real-time school quality checker. From curriculum depth to teacher-to-student ratios and infrastructure health, we provide a transparent look at educational institutions across the globe, updated as changes happen.</p>
 
         <h4 class="font-black uppercase mt-6 text-[#ffde59]">New: Business Investment Tracker</h4>
         <p>Navigate global markets with our real-time business intelligence suite. We track commercial registration hurdles, local ownership requirements, and market volatility in real-time for any city in the world, helping founders and investors make informed decisions in emerging and established hubs.</p>

@@ -1,18 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SearchForm } from './components/SearchForm';
 import { SnapshotCard } from './components/SnapshotCard';
 import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
-import { SchoolQualityCard } from './components/SchoolQualityCard';
 import { BusinessQualityCard } from './components/BusinessQualityCard';
 import { getTravelSnapshot, TravelSnapshot, RedditDigest } from './services/gemini';
 import { getAirportStatus, AirportStatus } from './services/airport';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
-import { getSchoolQualitySnapshot, SchoolQualitySnapshot } from './services/schools';
 import { getBusinessSnapshot, BusinessSnapshot } from './services/business';
 import { getRedditDigest } from './services/reddit';
 import { RedditDigestCard } from './components/RedditDigestCard';
-import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check, Plane, GraduationCap, TrendingUp, Briefcase } from 'lucide-react';
+import { ReliefLocator } from './components/ReliefLocator';
+import { auth, googleProvider } from './firebase';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check, Plane, TrendingUp, Briefcase, Map as MapIcon, AlertTriangle, LogIn, LogOut, User as UserIcon } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
 
 const FEATURED_CITIES = [
@@ -36,10 +37,10 @@ const INITIAL_FEATURED_DATA = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'travel' | 'schools' | 'business'>('travel');
+  const [activeTab, setActiveTab] = useState<'travel' | 'business' | 'relief'>('travel');
+  const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<TravelSnapshot | null>(null);
   const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
-  const [schoolSnapshot, setSchoolSnapshot] = useState<SchoolQualitySnapshot | null>(null);
   const [businessSnapshot, setBusinessSnapshot] = useState<BusinessSnapshot | null>(null);
   const [redditDigest, setRedditDigest] = useState<RedditDigest | null>(null);
   const [comparisonSnapshot, setComparisonSnapshot] = useState<TravelSnapshot | null>(null);
@@ -59,6 +60,29 @@ export default function App() {
   const [isAdvisoriesLoading, setIsAdvisoriesLoading] = useState(true);
   const [showCopied, setShowCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Login failed", err);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
   useEffect(() => {
     async function fetchAdvisories() {
@@ -101,13 +125,13 @@ export default function App() {
         title: "TripIntel | Unfiltered Travel Intelligence & Real-Time Destination Reports",
         description: "Get the real truth about global travel destinations. TripIntel provides unfiltered intelligence on crowds, pricing, and local realities before you book."
       },
-      schools: {
-        title: "TripIntel Schools | Global Education Quality & School Comparison Database",
-        description: "Compare school quality across global education hubs. Analyze curriculums, teacher ratings, and infrastructure with TripIntel's blunt school reports."
-      },
       business: {
         title: "TripIntel Business | Global Market Entry & Business Intelligence for Founders",
         description: "Navigate global business markets with real intel. TripIntel provides blunt data on registration hurdles, ownership rules, and commercial market realities."
+      },
+      relief: {
+        title: "TripIntel Relief | Find Public Restrooms & Friendly Businesses Globally",
+        description: "Locate public restrooms, accessible toilets, and baby changing facilities in unfamiliar cities with TripIntel's community-driven Relief Locator."
       }
     };
 
@@ -167,7 +191,6 @@ export default function App() {
     if (!isSecondCity) {
       setSnapshot(null);
       setAirportStatus(null);
-      setSchoolSnapshot(null);
       setBusinessSnapshot(null);
       setRedditDigest(null);
       setIsRedditLoading(true);
@@ -197,9 +220,6 @@ export default function App() {
           setAirportStatus(airportData);
           setRedditDigest(redditData);
         }
-      } else if (activeTab === 'schools') {
-        const schoolData = await getSchoolQualitySnapshot(destination);
-        setSchoolSnapshot(schoolData);
       } else if (activeTab === 'business') {
         const businessData = await getBusinessSnapshot(destination);
         setBusinessSnapshot(businessData);
@@ -258,7 +278,29 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-2 sm:px-3 py-1 rounded-full border border-green-200 text-[8px] sm:text-[10px] font-black uppercase tracking-widest animate-pulse">
+            {user ? (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none">{user.displayName}</span>
+                  <button onClick={handleLogout} className="text-[8px] font-bold uppercase text-red-500 hover:underline">Logout</button>
+                </div>
+                <div className="w-10 h-10 rounded-full border-2 border-[#1e1e24] overflow-hidden shadow-[2px_2px_0px_0px_#1e1e24]">
+                  <img src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} alt="User" />
+                </div>
+                <button onClick={handleLogout} className="sm:hidden p-2 brutal-border bg-white" title="Logout">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                className="flex items-center gap-2 bg-[#ffde59] px-3 sm:px-4 py-2 brutal-border text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_#1e1e24] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none transition-all"
+              >
+                <LogIn className="w-4 h-4" />
+                Login
+              </button>
+            )}
+            <div className="hidden md:flex items-center gap-2 bg-green-50 text-green-700 px-2 sm:px-3 py-1 rounded-full border border-green-200 text-[8px] sm:text-[10px] font-black uppercase tracking-widest animate-pulse">
               <Activity className="w-3 h-3" /> Live Data Active
             </div>
             <div className="text-[10px] sm:text-sm font-bold bg-gray-100 px-2 sm:px-3 py-1 rounded-full brutal-border">
@@ -276,25 +318,25 @@ export default function App() {
           <div className="inline-block bg-[#ffde59] px-3 sm:px-4 py-1 rounded-full brutal-border mb-4 font-black uppercase tracking-widest text-[10px] sm:text-xs">
             {activeTab === 'travel' 
               ? `Exploring ${DESTINATIONS.length} Global Destinations` 
-              : activeTab === 'schools' 
-                ? 'Analyzing Global Education Hubs' 
-                : 'Mapping Global Business Markets'}
+              : activeTab === 'business'
+                ? 'Mapping Global Business Markets'
+                : 'Locating Relief Points Globally'}
           </div>
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 sm:mb-6 leading-[0.9]">
             {activeTab === 'travel' ? (
               <>Know <span className="text-[#ff5757]">Before</span> <br/> You Go</>
-            ) : activeTab === 'schools' ? (
-              <>Education <span className="text-[#5ce1e6]">Without</span> <br/> The Fluff</>
-            ) : (
+            ) : activeTab === 'business' ? (
               <>Launch <span className="text-[#ffde59]">With</span> <br/> Real Intel</>
+            ) : (
+              <>Relief <span className="text-[#ff5757]">When</span> <br/> You Need It</>
             )}
           </h2>
           <p className="text-base sm:text-lg md:text-xl font-bold text-gray-600 mb-6 sm:mb-8 px-4">
             {activeTab === 'travel' 
               ? "Unfiltered travel intelligence. Discover the real truth about crowds, pricing, and local realities before you book your next trip."
-              : activeTab === 'schools'
-                ? "The ultimate school quality database. Compare curriculums, teacher ratings, and infrastructure for global education hubs."
-                : "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."}
+              : activeTab === 'business'
+                ? "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."
+                : "Find public restrooms, accessible toilets, and baby changing facilities in unfamiliar cities with our community-driven map."}
           </p>
 
           {/* Tab Switcher */}
@@ -304,7 +346,6 @@ export default function App() {
                 onClick={() => {
                   setActiveTab('travel');
                   setSnapshot(null);
-                  setSchoolSnapshot(null);
                 }}
                 className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'travel' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
               >
@@ -313,21 +354,8 @@ export default function App() {
               </button>
               <button 
                 onClick={() => {
-                  setActiveTab('schools');
-                  setSnapshot(null);
-                  setSchoolSnapshot(null);
-                  setBusinessSnapshot(null);
-                }}
-                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'schools' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
-              >
-                <GraduationCap className="w-3 h-3 sm:w-4 h-4" />
-                Schools
-              </button>
-              <button 
-                onClick={() => {
                   setActiveTab('business');
                   setSnapshot(null);
-                  setSchoolSnapshot(null);
                   setBusinessSnapshot(null);
                 }}
                 className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'business' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
@@ -335,20 +363,37 @@ export default function App() {
                 <Briefcase className="w-3 h-3 sm:w-4 h-4" />
                 Business
               </button>
+              <button 
+                onClick={() => {
+                  setActiveTab('relief');
+                  setSnapshot(null);
+                  setBusinessSnapshot(null);
+                }}
+                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'relief' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+              >
+                <MapIcon className="w-3 h-3 sm:w-4 h-4" />
+                Relief
+              </button>
             </div>
           </div>
           
-          <SearchForm onSearch={handleSearch} isLoading={isLoading} mode={activeTab} />
+          {activeTab !== 'relief' && (
+            <SearchForm onSearch={handleSearch} isLoading={isLoading} mode={activeTab} />
+          )}
         </div>
 
         {/* Results Section */}
         <div ref={resultsRef} className="scroll-mt-24">
-          {(isLoading || snapshot || schoolSnapshot || businessSnapshot || error) && (
+          {(isLoading || snapshot || businessSnapshot || activeTab === 'relief' || error) && (
             <div className="w-full space-y-8 min-h-[400px]">
             <div className="flex items-center gap-3 justify-center">
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
               <h3 className="font-black uppercase tracking-widest text-xl">
-                {activeTab === 'travel' ? (isComparing ? 'Comparison View' : 'Your Travel Intel') : activeTab === 'schools' ? 'School Quality Report' : 'Business Intelligence Report'}
+                {activeTab === 'travel' 
+                  ? (isComparing ? 'Comparison View' : 'Your Travel Intel') 
+                  : activeTab === 'business'
+                    ? 'Business Intelligence Report'
+                    : 'Relief Locator'}
               </h3>
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
             </div>
@@ -412,15 +457,15 @@ export default function App() {
                 </div>
               )}
 
-              {schoolSnapshot && activeTab === 'schools' && (
-                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <SchoolQualityCard snapshot={schoolSnapshot} />
-                </div>
-              )}
-
               {businessSnapshot && activeTab === 'business' && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
                   <BusinessQualityCard snapshot={businessSnapshot} />
+                </div>
+              )}
+
+              {activeTab === 'relief' && (
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <ReliefLocator initialCity={currentSearch.destination} />
                 </div>
               )}
 
@@ -466,17 +511,13 @@ export default function App() {
       </div>
 
         {/* Featured Grid */}
-        {!snapshot && !schoolSnapshot && !businessSnapshot && !isLoading && (
+        {!snapshot && !businessSnapshot && activeTab !== 'relief' && !isLoading && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
                 {activeTab === 'travel' ? (
                   <>
                     <Sparkles className="w-8 h-8 text-[#ff5757]" /> Featured in {currentMonth}
-                  </>
-                ) : activeTab === 'schools' ? (
-                  <>
-                    <GraduationCap className="w-8 h-8 text-[#5ce1e6]" /> Top Education Hubs
                   </>
                 ) : (
                   <>
@@ -497,31 +538,6 @@ export default function App() {
                     temperature={data.temperature}
                     onClick={() => handleSearch(data.city, currentMonth)}
                   />
-                ))
-              ) : activeTab === 'schools' ? (
-                [
-                  { city: "London, UK", score: 9.2 },
-                  { city: "Boston, USA", score: 9.5 },
-                  { city: "Melbourne, Australia", score: 9.1 },
-                  { city: "Singapore", score: 9.6 },
-                  { city: "Zurich, Switzerland", score: 9.8 },
-                  { city: "Tokyo, Japan", score: 9.4 }
-                ].map((data) => (
-                  <div 
-                    key={data.city}
-                    onClick={() => handleSearch(data.city, currentMonth)}
-                    className="brutal-card bg-white p-6 group cursor-pointer hover:-translate-y-2 transition-transform"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-2xl font-black uppercase tracking-tight">{data.city}</h3>
-                      <div className="w-12 h-12 rounded-lg border-2 border-[#1e1e24] bg-[#5ce1e6] flex items-center justify-center font-black shadow-[2px_2px_0px_0px_#1e1e24]">
-                        {data.score}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#5ce1e6] group-hover:gap-4 transition-all">
-                      View School Report <TrendingUp className="w-4 h-4" />
-                    </div>
-                  </div>
                 ))
               ) : (
                 [
@@ -677,10 +693,10 @@ export default function App() {
             
             <div className="brutal-card bg-white p-6 space-y-4">
               <div className="w-12 h-12 bg-[#5ce1e6] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
-                <GraduationCap className="w-6 h-6 text-white" />
+                <MapIcon className="w-6 h-6 text-white" />
               </div>
-              <h4 className="text-xl font-black uppercase tracking-tight">Global Education</h4>
-              <p className="text-sm font-bold opacity-70">Our new real-time school quality checker monitors educational institutions worldwide. Get instant data on curriculums, infrastructure, and teacher ratings.</p>
+              <h4 className="text-xl font-black uppercase tracking-tight">Relief Locator</h4>
+              <p className="text-sm font-bold opacity-70">Find public restrooms, accessible toilets, and baby changing facilities in unfamiliar cities with our community-driven map.</p>
             </div>
             
             <div className="brutal-card bg-white p-6 space-y-4">

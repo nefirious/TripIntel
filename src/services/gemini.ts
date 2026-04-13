@@ -300,6 +300,120 @@ export async function getTravelSnapshot(
   });
 }
 
+export async function searchRestrooms(location: string): Promise<any[]> {
+  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `Search for publicly accessible restrooms, department stores, libraries, cafes, or restaurants with public-friendly toilets near ${location}.
+    
+    For each location, provide:
+    - name: The name of the place.
+    - address: The full address.
+    - lat: Exact Latitude (high precision).
+    - lng: Exact Longitude (high precision).
+    - type: One of "public", "business", "department_store", "cafe", "library".
+    - isAccessible: boolean (if known).
+    - hasBabyChanging: boolean (if known).
+    - isGenderNeutral: boolean (if known).
+
+    Return an array of up to 10 locations in JSON format.
+    
+    CRITICAL: Use Google Search to find REAL locations. 
+    ACCURACY REQUIREMENT: You MUST verify the exact GPS coordinates (latitude and longitude) for each specific building or business. 
+    Do not provide approximate coordinates for the city or neighborhood. 
+    If you cannot find exact coordinates, search for "[Place Name] [Address] GPS coordinates" specifically.
+    The coordinates must point directly to the entrance of the facility.`;
+
+  return withRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              address: { type: Type.STRING },
+              lat: { type: Type.NUMBER },
+              lng: { type: Type.NUMBER },
+              type: { type: Type.STRING, enum: ["public", "business", "department_store", "cafe", "library"] },
+              isAccessible: { type: Type.BOOLEAN },
+              hasBabyChanging: { type: Type.BOOLEAN },
+              isGenderNeutral: { type: Type.BOOLEAN },
+            },
+            required: ["name", "lat", "lng", "type"]
+          }
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Empty response from AI model.");
+    return JSON.parse(text);
+  });
+}
+
+export async function discoverNearbyRestrooms(lat: number, lng: number): Promise<any[]> {
+  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `Find ALL publicly accessible restrooms and public-friendly facilities (department stores, libraries, cafes, restaurants, parks, train stations) near the coordinates ${lat}, ${lng}.
+    
+    For each location, provide:
+    - name: The name of the place.
+    - address: The full address.
+    - lat: Exact Latitude (high precision).
+    - lng: Exact Longitude (high precision).
+    - type: One of "public", "business", "department_store", "cafe", "library".
+    - isAccessible: boolean (if known).
+    - hasBabyChanging: boolean (if known).
+    - isGenderNeutral: boolean (if known).
+
+    Return an array of up to 20 locations in JSON format.
+    
+    CRITICAL: Use Google Search to find REAL locations. 
+    ACCURACY REQUIREMENT: You MUST verify the exact GPS coordinates (latitude and longitude) for each specific building or business. 
+    Do not provide approximate coordinates for the general area. 
+    If you cannot find exact coordinates, search for "[Place Name] [Address] GPS coordinates" specifically.
+    The coordinates must point directly to the facility.`;
+
+  return withRetry(async () => {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING },
+              address: { type: Type.STRING },
+              lat: { type: Type.NUMBER },
+              lng: { type: Type.NUMBER },
+              type: { type: Type.STRING, enum: ["public", "business", "department_store", "cafe", "library"] },
+              isAccessible: { type: Type.BOOLEAN },
+              hasBabyChanging: { type: Type.BOOLEAN },
+              isGenderNeutral: { type: Type.BOOLEAN },
+            },
+            required: ["name", "lat", "lng", "type"]
+          }
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("Empty response from AI model.");
+    return JSON.parse(text);
+  });
+}
+
 export async function summarizeRedditDigest(city: string): Promise<RedditDigest> {
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   const ai = new GoogleGenAI({ apiKey });

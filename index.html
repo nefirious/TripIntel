@@ -29,7 +29,18 @@
   </head>
   <body>
     <div id="fb-root"></div>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v25.0&appId=154365449270959"></script>
+    <script>
+      window.fbAsyncInit = function() {
+        if (typeof FB !== 'undefined') {
+          FB.init({
+            appId      : '154365449270959',
+            xfbml      : true,
+            version    : 'v25.0'
+          });
+        }
+      };
+    </script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js" onerror="console.warn('Facebook SDK failed to load. This is often due to ad-blockers.')"></script>
     <div id="root">
       <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; background: #f9fafb;">
         <div style="text-align: center;">
@@ -41,7 +52,7 @@
         </div>
       </div>
     </div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" crossorigin="anonymous" src="/src/main.tsx"></script>
   </body>
 </html>
 
