@@ -5,11 +5,13 @@ import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
 import { SchoolQualityCard } from './components/SchoolQualityCard';
 import { BusinessQualityCard } from './components/BusinessQualityCard';
-import { getTravelSnapshot, TravelSnapshot } from './services/gemini';
+import { getTravelSnapshot, TravelSnapshot, RedditDigest } from './services/gemini';
 import { getAirportStatus, AirportStatus } from './services/airport';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
 import { getSchoolQualitySnapshot, SchoolQualitySnapshot } from './services/schools';
 import { getBusinessSnapshot, BusinessSnapshot } from './services/business';
+import { getRedditDigest } from './services/reddit';
+import { RedditDigestCard } from './components/RedditDigestCard';
 import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check, Plane, GraduationCap, TrendingUp, Briefcase } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
 
@@ -39,9 +41,11 @@ export default function App() {
   const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
   const [schoolSnapshot, setSchoolSnapshot] = useState<SchoolQualitySnapshot | null>(null);
   const [businessSnapshot, setBusinessSnapshot] = useState<BusinessSnapshot | null>(null);
+  const [redditDigest, setRedditDigest] = useState<RedditDigest | null>(null);
   const [comparisonSnapshot, setComparisonSnapshot] = useState<TravelSnapshot | null>(null);
   const [comparisonAirportStatus, setComparisonAirportStatus] = useState<AirportStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedditLoading, setIsRedditLoading] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentSearch, setCurrentSearch] = useState({ destination: '', month: '' });
@@ -165,6 +169,8 @@ export default function App() {
       setAirportStatus(null);
       setSchoolSnapshot(null);
       setBusinessSnapshot(null);
+      setRedditDigest(null);
+      setIsRedditLoading(true);
       setCurrentSearch({ destination, month });
     } else {
       setComparisonSearch({ destination, month });
@@ -177,9 +183,10 @@ export default function App() {
 
     try {
       if (activeTab === 'travel') {
-        const [snapshotData, airportData] = await Promise.all([
+        const [snapshotData, airportData, redditData] = await Promise.all([
           getTravelSnapshot(destination, month, activity),
-          getAirportStatus(destination)
+          getAirportStatus(destination),
+          !isSecondCity ? getRedditDigest(destination) : Promise.resolve(null)
         ]);
 
         if (isSecondCity) {
@@ -188,6 +195,7 @@ export default function App() {
         } else {
           setSnapshot(snapshotData);
           setAirportStatus(airportData);
+          setRedditDigest(redditData);
         }
       } else if (activeTab === 'schools') {
         const schoolData = await getSchoolQualitySnapshot(destination);
@@ -206,6 +214,7 @@ export default function App() {
       }
     } finally {
       setIsLoading(false);
+      setIsRedditLoading(false);
     }
   };
 
@@ -378,6 +387,18 @@ export default function App() {
                     month={currentSearch.month}
                     isCompact={isComparing}
                   />
+                  
+                  {!isComparing && (redditDigest || isRedditLoading) && (
+                    <div className="mt-8">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-[2px] flex-1 bg-[#1e1e24]"></div>
+                        <h4 className="font-black uppercase tracking-widest text-sm">Local Community Digest</h4>
+                        <div className="h-[2px] flex-1 bg-[#1e1e24]"></div>
+                      </div>
+                      <RedditDigestCard digest={redditDigest!} isLoading={isRedditLoading} />
+                    </div>
+                  )}
+
                   {!isComparing && !isLoading && (
                     <div className="flex justify-center">
                       <button 
