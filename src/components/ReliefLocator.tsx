@@ -41,6 +41,7 @@ const mapOptions = {
   streetViewControl: false,
   mapTypeControl: false,
   fullscreenControl: false,
+  gestureHandling: 'greedy',
   styles: [
     {
       "featureType": "all",
@@ -97,9 +98,14 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [closestToilet, setClosestToilet] = useState<ReliefLocation | null>(null);
   const [authFailure, setAuthFailure] = useState(false);
+  const [filters, setFilters] = useState({
+    accessible: false,
+    babyChanging: false,
+    genderNeutral: false
+  });
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const apiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   // Catch Google Maps Auth Failures (the "Oops! Something went wrong" error)
   useEffect(() => {
@@ -200,6 +206,15 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
     }
   }, [userLocation, locations]);
 
+  const filteredLocations = useMemo(() => {
+    return locations.filter(loc => {
+      if (filters.accessible && !loc.isAccessible) return false;
+      if (filters.babyChanging && !loc.hasBabyChanging) return false;
+      if (filters.genderNeutral && !loc.isGenderNeutral) return false;
+      return true;
+    });
+  }, [locations, filters]);
+
   const onMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (isAdding && e.latLng) {
       setNewLocationPos({ lat: e.latLng.lat(), lng: e.latLng.lng() });
@@ -260,22 +275,28 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
       const newLocs: ReliefLocation[] = allResults.map((place: google.maps.places.PlaceResult) => {
         // Map Google types to our internal types
         let type: string = 'business';
-        if (place.types?.includes('gas_station')) type = 'gas_station';
-        else if (place.types?.includes('department_store')) type = 'department_store';
-        else if (place.types?.includes('cafe')) type = 'cafe';
-        else if (place.types?.includes('library')) type = 'library';
+        const pTypes = place.types || [];
+        
+        if (pTypes.includes('gas_station')) type = 'gas_station';
+        else if (pTypes.includes('department_store')) type = 'department_store';
+        else if (pTypes.includes('cafe')) type = 'cafe';
+        else if (pTypes.includes('library')) type = 'library';
+
+        // Infer some features based on type
+        const isPublicService = pTypes.includes('library') || pTypes.includes('city_hall') || pTypes.includes('local_government_office');
+        const isMajorRetail = pTypes.includes('department_store') || pTypes.includes('shopping_mall');
 
         return {
           id: place.place_id || `temp-${Date.now()}-${Math.random()}`,
           name: place.name || 'Unknown Place',
           lat: place.geometry?.location?.lat() || 0,
           lng: place.geometry?.location?.lng() || 0,
-          type: type,
+          type: type as any,
           address: place.vicinity || '',
           addedBy: 'system',
-          isAccessible: place.wheelchair_accessible_entrance || false,
-          hasBabyChanging: false, // Places API doesn't reliably provide this
-          isGenderNeutral: false  // Places API doesn't reliably provide this
+          isAccessible: (place as any).wheelchair_accessible_entrance || isPublicService || isMajorRetail || false,
+          hasBabyChanging: isPublicService || isMajorRetail || false,
+          isGenderNeutral: isPublicService || false
         };
       });
 
@@ -418,7 +439,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 h-[600px] brutal-border relative overflow-hidden bg-gray-100 shadow-[8px_8px_0px_0px_#1e1e24]">
+        <div className="lg:col-span-3 h-[70vh] md:h-[600px] brutal-border relative overflow-hidden bg-gray-100 shadow-[8px_8px_0px_0px_#1e1e24]">
           {isLoaded ? (
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
@@ -430,7 +451,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             >
               {userLocation && <MarkerF position={userLocation} icon={userMarkerIcon!} zIndex={1000} />}
               
-              {locations.map(loc => (
+              {filteredLocations.map(loc => (
                 <MarkerF 
                   key={loc.id}
                   position={{ lat: loc.lat, lng: loc.lng }}
@@ -455,23 +476,35 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
                   position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
                   onCloseClick={() => setSelectedLocation(null)}
                 >
-                  <div className="p-2 min-w-[200px]">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="p-2 min-w-[180px] max-w-[240px]">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${selectedLocation.addedBy === 'system' ? 'bg-cyan-50 border-cyan-200 text-cyan-700' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
                         {selectedLocation.addedBy === 'system' ? 'Verified' : 'Community'}
                       </span>
                       <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border bg-gray-50 border-gray-200">
-                        {selectedLocation.type}
+                        {selectedLocation.type.replace('_', ' ')}
                       </span>
                     </div>
-                    <h4 className="font-black uppercase text-sm mb-2">{selectedLocation.name}</h4>
-                    <div className="flex gap-2 mb-3">
-                      {selectedLocation.isAccessible && <Accessibility className="w-4 h-4 text-blue-600" title="ADA Accessible" />}
-                      {selectedLocation.hasBabyChanging && <Baby className="w-4 h-4 text-pink-600" title="Baby Changing" />}
-                      {selectedLocation.isGenderNeutral && <Users className="w-4 h-4 text-purple-600" title="Gender Neutral" />}
+                    <h4 className="font-black uppercase text-xs sm:text-sm mb-2 break-words">{selectedLocation.name}</h4>
+                    <div className="flex flex-col gap-1 mb-3">
+                      {selectedLocation.isAccessible && (
+                        <div className="flex items-center gap-2 text-[8px] font-bold uppercase text-blue-600">
+                          <Accessibility className="w-3 h-3" /> Handicap Accessible
+                        </div>
+                      )}
+                      {selectedLocation.hasBabyChanging && (
+                        <div className="flex items-center gap-2 text-[8px] font-bold uppercase text-pink-600">
+                          <Baby className="w-3 h-3" /> Family / Baby Changing
+                        </div>
+                      )}
+                      {selectedLocation.isGenderNeutral && (
+                        <div className="flex items-center gap-2 text-[8px] font-bold uppercase text-purple-600">
+                          <Users className="w-3 h-3" /> Gender Neutral
+                        </div>
+                      )}
                     </div>
                     <button 
-                      className="w-full bg-[#1e1e24] text-white py-1.5 text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors"
+                      className="w-full bg-[#1e1e24] text-white py-2 text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors"
                       onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedLocation.lat},${selectedLocation.lng}`)}
                     >
                       Get Directions
@@ -524,39 +557,59 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             </button>
           </div>
 
+          <div className="absolute bottom-4 left-4 right-4 z-[1000] flex flex-wrap justify-center gap-2">
+            <button 
+              onClick={() => setFilters(f => ({ ...f, accessible: !f.accessible }))}
+              className={`brutal-btn px-3 py-2 text-[10px] sm:text-[8px] font-black uppercase flex items-center gap-1.5 shadow-lg transition-all flex-1 sm:flex-none justify-center ${filters.accessible ? 'bg-blue-400 text-white' : 'bg-white text-gray-500'}`}
+            >
+              <Accessibility className="w-4 h-4 sm:w-3 h-3" /> <span className="hidden sm:inline">Handicap</span><span className="sm:hidden">ADA</span>
+            </button>
+            <button 
+              onClick={() => setFilters(f => ({ ...f, babyChanging: !f.babyChanging }))}
+              className={`brutal-btn px-3 py-2 text-[10px] sm:text-[8px] font-black uppercase flex items-center gap-1.5 shadow-lg transition-all flex-1 sm:flex-none justify-center ${filters.babyChanging ? 'bg-pink-400 text-white' : 'bg-white text-gray-500'}`}
+            >
+              <Baby className="w-4 h-4 sm:w-3 h-3" /> <span className="hidden sm:inline">Family</span><span className="sm:hidden">Baby</span>
+            </button>
+            <button 
+              onClick={() => setFilters(f => ({ ...f, genderNeutral: !f.genderNeutral }))}
+              className={`brutal-btn px-3 py-2 text-[10px] sm:text-[8px] font-black uppercase flex items-center gap-1.5 shadow-lg transition-all flex-1 sm:flex-none justify-center ${filters.genderNeutral ? 'bg-purple-400 text-white' : 'bg-white text-gray-500'}`}
+            >
+              <Users className="w-4 h-4 sm:w-3 h-3" /> <span className="hidden sm:inline">Neutral</span><span className="sm:hidden">All</span>
+            </button>
+          </div>
           <div className="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
             <button 
               onClick={findMyLocation}
               disabled={isLocating}
-              className={`p-3 brutal-border shadow-lg transition-all ${isLocating ? 'bg-[#5ce1e6] animate-pulse' : 'bg-white hover:bg-gray-50'}`}
+              className={`p-4 sm:p-3 brutal-border shadow-lg transition-all ${isLocating ? 'bg-[#5ce1e6] animate-pulse' : 'bg-white hover:bg-gray-50'}`}
               title="Find my location"
             >
-              <Navigation className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
+              <Navigation className={`w-6 h-6 sm:w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
             </button>
             <button 
               onClick={() => {
                 setIsAdding(!isAdding);
                 setNewLocationPos(null);
               }}
-              className={`p-3 brutal-border shadow-lg ${isAdding ? 'bg-[#ff5757] text-white' : 'bg-white text-[#1e1e24] hover:bg-gray-50'}`}
+              className={`p-4 sm:p-3 brutal-border shadow-lg ${isAdding ? 'bg-[#ff5757] text-white' : 'bg-white text-[#1e1e24] hover:bg-gray-50'}`}
               title="Add a location"
             >
-              {isAdding ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              {isAdding ? <X className="w-6 h-6 sm:w-5 h-5" /> : <Plus className="w-6 h-6 sm:w-5 h-5" />}
             </button>
             <div className="flex flex-col brutal-border bg-white shadow-lg overflow-hidden">
               <button 
                 onClick={() => setMapZoom(prev => Math.min(prev + 1, 20))}
-                className="p-3 hover:bg-gray-50 border-b brutal-border-b transition-colors"
+                className="p-4 sm:p-3 hover:bg-gray-50 border-b brutal-border-b transition-colors"
                 title="Zoom In"
               >
-                <ZoomIn className="w-5 h-5" />
+                <ZoomIn className="w-6 h-6 sm:w-5 h-5" />
               </button>
               <button 
                 onClick={() => setMapZoom(prev => Math.max(prev - 1, 1))}
-                className="p-3 hover:bg-gray-50 transition-colors"
+                className="p-4 sm:p-3 hover:bg-gray-50 transition-colors"
                 title="Zoom Out"
               >
-                <ZoomOut className="w-5 h-5" />
+                <ZoomOut className="w-6 h-6 sm:w-5 h-5" />
               </button>
             </div>
           </div>
@@ -599,15 +652,18 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
                       <option value="library">Library</option>
                       <option value="department_store">Department Store</option>
                     </select>
-                    <div className="flex flex-wrap gap-2">
-                      <label className="flex items-center gap-1 text-[8px] font-black uppercase cursor-pointer">
-                        <input type="checkbox" name="isAccessible" className="w-3 h-3 brutal-border" /> ADA
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 text-[8px] font-black uppercase cursor-pointer bg-gray-50 p-1.5 brutal-border hover:bg-blue-50 transition-colors">
+                        <input type="checkbox" name="isAccessible" className="w-3 h-3 brutal-border" /> 
+                        <Accessibility className="w-3 h-3 text-blue-600" /> Handicap Accessible
                       </label>
-                      <label className="flex items-center gap-1 text-[8px] font-black uppercase cursor-pointer">
-                        <input type="checkbox" name="hasBabyChanging" className="w-3 h-3 brutal-border" /> Baby
+                      <label className="flex items-center gap-2 text-[8px] font-black uppercase cursor-pointer bg-gray-50 p-1.5 brutal-border hover:bg-pink-50 transition-colors">
+                        <input type="checkbox" name="hasBabyChanging" className="w-3 h-3 brutal-border" /> 
+                        <Baby className="w-3 h-3 text-pink-600" /> Family / Baby Changing
                       </label>
-                      <label className="flex items-center gap-1 text-[8px] font-black uppercase cursor-pointer">
-                        <input type="checkbox" name="isGenderNeutral" className="w-3 h-3 brutal-border" /> Neutral
+                      <label className="flex items-center gap-2 text-[8px] font-black uppercase cursor-pointer bg-gray-50 p-1.5 brutal-border hover:bg-purple-50 transition-colors">
+                        <input type="checkbox" name="isGenderNeutral" className="w-3 h-3 brutal-border" /> 
+                        <Users className="w-3 h-3 text-purple-600" /> Gender Neutral
                       </label>
                     </div>
                     <button type="submit" className="w-full brutal-btn bg-[#ffde59] py-2 text-xs font-black uppercase">Save Pin</button>
