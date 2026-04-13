@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReliefLocation, getReliefLocations, addReliefLocation, calculateDistance } from '../services/relief';
-import { discoverNearbyRestrooms } from '../services/gemini';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 
@@ -146,18 +145,42 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
     loadLocations();
   }, [loadLocations]);
 
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
-          setUserLocation(pos);
-          setMapCenter(pos);
-        },
-        () => console.warn('Geolocation failed')
-      );
+  const [isLocating, setIsLocating] = useState(false);
+
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const findMyLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      return;
     }
+
+    setIsLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserLocation(pos);
+        setMapCenter(pos);
+        setMapZoom(15);
+        setIsLocating(false);
+      },
+      (error) => {
+        console.warn('Geolocation failed:', error);
+        setIsLocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError("Location access denied. Please enable it in your browser.");
+        } else {
+          setLocationError("Could not find your location. Try again?");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }, []);
+
+  useEffect(() => {
+    findMyLocation();
+  }, [findMyLocation]);
 
   // Update closest toilet whenever locations or userLocation changes
   useEffect(() => {
@@ -200,28 +223,77 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
   };
 
   const handleDiscoverNearby = async () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !isLoaded) return;
     setIsDiscovering(true);
     try {
       const center = mapRef.current.getCenter();
       if (!center) return;
       
-      const results = await discoverNearbyRestrooms(center.lat(), center.lng());
+      const service = new google.maps.places.PlacesService(mapRef.current);
       
-      // Filter results to include gas stations, etc.
-      const newLocs: ReliefLocation[] = results.map((r: any) => ({
-        ...r,
-        id: `temp-${Date.now()}-${Math.random()}`,
-        addedBy: 'system'
-      }));
-
-      setLocations(prev => {
-        const existingNames = new Set(prev.map(l => l.name));
-        const uniqueNew = newLocs.filter(l => !existingNames.has(l.name));
-        return [...prev, ...uniqueNew];
+      // Define types to search for
+      const types = ['gas_station', 'department_store', 'cafe', 'library', 'restaurant'];
+      
+      const allResults: any[] = [];
+      
+      // Perform searches for each type to get a good mix
+      const searchPromises = types.map(type => {
+        return new Promise<google.maps.places.PlaceResult[]>((resolve) => {
+          service.nearbySearch({
+            location: center,
+            radius: 2000, // 2km radius
+            type: type as any
+          }, (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+              resolve(results);
+            } else {
+              resolve([]);
+            }
+          });
+        });
       });
-    } catch (err) {
+
+      const resultsArray = await Promise.all(searchPromises);
+      resultsArray.forEach(results => allResults.push(...results));
+
+      // Map Google Places results to our ReliefLocation format
+      const newLocs: ReliefLocation[] = allResults.map((place: google.maps.places.PlaceResult) => {
+        // Map Google types to our internal types
+        let type: string = 'business';
+        if (place.types?.includes('gas_station')) type = 'gas_station';
+        else if (place.types?.includes('department_store')) type = 'department_store';
+        else if (place.types?.includes('cafe')) type = 'cafe';
+        else if (place.types?.includes('library')) type = 'library';
+
+        return {
+          id: place.place_id || `temp-${Date.now()}-${Math.random()}`,
+          name: place.name || 'Unknown Place',
+          lat: place.geometry?.location?.lat() || 0,
+          lng: place.geometry?.location?.lng() || 0,
+          type: type,
+          address: place.vicinity || '',
+          addedBy: 'system',
+          isAccessible: place.wheelchair_accessible_entrance || false,
+          hasBabyChanging: false, // Places API doesn't reliably provide this
+          isGenderNeutral: false  // Places API doesn't reliably provide this
+        };
+      });
+
+      // Filter out duplicates and items with invalid coordinates
+      setLocations(prev => {
+        const existingIds = new Set(prev.map(l => l.id));
+        const uniqueNew = newLocs.filter(l => l.lat !== 0 && !existingIds.has(l.id));
+        
+        // Limit to top 30 results to keep map clean
+        const combined = [...prev, ...uniqueNew];
+        return combined.slice(-50); // Keep last 50 discovered/added locations
+      });
+
+    } catch (err: any) {
       console.error('Discovery failed:', err);
+      if (err.message?.includes('LegacyApiNotActivatedMapError') || (err.toString && err.toString().includes('LegacyApiNotActivatedMapError'))) {
+        setAuthFailure(true); // Trigger the checklist if we hit the legacy API error
+      }
     } finally {
       setIsDiscovering(false);
     }
@@ -279,7 +351,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             <li className="flex items-start gap-3">
               <div className="w-5 h-5 rounded-full bg-red-100 border-2 border-red-600 flex-shrink-0 flex items-center justify-center text-[10px]">3</div>
               <div>
-                <span className="text-red-600 underline">Places API:</span> Ensure the "Places API" is also enabled in the same project.
+                <span className="text-red-600 underline">Places API (Classic):</span> Ensure the standard <span className="font-black">"Places API"</span> is enabled. Note: This is different from "Places API (New)". You need the classic one for this library.
               </div>
             </li>
             <li className="flex items-start gap-3">
@@ -415,6 +487,23 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
           )}
 
           {/* Map Overlays */}
+          <AnimatePresence>
+            {locationError && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute top-20 left-1/2 -translate-x-1/2 z-[1001] bg-[#ff5757] text-white px-4 py-2 brutal-border shadow-xl text-[10px] font-black uppercase flex items-center gap-2"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {locationError}
+                <button onClick={() => setLocationError(null)} className="ml-2 hover:opacity-70">
+                  <X className="w-3 h-3" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
             <button 
               onClick={handleDiscoverNearby}
@@ -437,11 +526,12 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
 
           <div className="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
             <button 
-              onClick={() => userLocation && setMapCenter(userLocation)}
-              className="bg-white p-3 brutal-border hover:bg-gray-50 shadow-lg"
+              onClick={findMyLocation}
+              disabled={isLocating}
+              className={`p-3 brutal-border shadow-lg transition-all ${isLocating ? 'bg-[#5ce1e6] animate-pulse' : 'bg-white hover:bg-gray-50'}`}
               title="Find my location"
             >
-              <Navigation className="w-5 h-5" />
+              <Navigation className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
             </button>
             <button 
               onClick={() => {
