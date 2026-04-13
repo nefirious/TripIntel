@@ -100,7 +100,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
   const [authFailure, setAuthFailure] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const apiKey = 'AIzaSyA28tZWJ_GsV0SY0Cw2Sc52H92QPgmrG5w';
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   // Catch Google Maps Auth Failures (the "Oops! Something went wrong" error)
   useEffect(() => {
@@ -289,11 +289,17 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
               </div>
             </li>
           </ul>
-          <div className="pt-4 border-t-2 border-gray-100">
+          <div className="pt-4 border-t-2 border-gray-100 flex flex-col sm:flex-row gap-3 justify-center">
+            <button 
+              onClick={() => window.location.reload()}
+              className="brutal-btn bg-[#5ce1e6] px-4 py-2 text-[10px] font-black uppercase flex items-center justify-center gap-2"
+            >
+              <Loader2 className="w-3 h-3" /> Refresh Page
+            </button>
             <a 
               href="https://console.cloud.google.com/google/maps-apis/overview" 
               target="_blank" 
-              className="brutal-btn bg-[#ffde59] px-4 py-2 text-[10px] font-black uppercase inline-block"
+              className="brutal-btn bg-[#ffde59] px-4 py-2 text-[10px] font-black uppercase inline-block text-center"
             >
               Open Google Cloud Console
             </a>
