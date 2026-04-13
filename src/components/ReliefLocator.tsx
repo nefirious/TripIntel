@@ -133,8 +133,15 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login failed", err);
+      if (err.code === 'auth/popup-blocked') {
+        alert("Login popup was blocked. Please enable popups or open this app in a new tab on mobile.");
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        // Ignore user cancellation
+      } else {
+        alert("Login failed. If you are on mobile, try opening the app in a new tab using the button in AI Studio.");
+      }
     }
   };
 
@@ -338,6 +345,32 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
     };
   }, [isLoaded]);
 
+  if (!apiKey) {
+    return (
+      <div className="p-8 sm:p-12 brutal-border bg-[#ffde59] text-[#1e1e24] text-center space-y-8 shadow-[8px_8px_0px_0px_#1e1e24]">
+        <div className="w-24 h-24 bg-white brutal-border mx-auto flex items-center justify-center rotate-6 shadow-[4px_4px_0px_0px_#1e1e24]">
+          <AlertTriangle className="w-12 h-12 text-[#ff5757]" />
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-3xl font-black uppercase tracking-tighter leading-none">Missing API Key</h3>
+          <p className="font-bold text-sm max-w-lg mx-auto uppercase">
+            The Google Maps API Key is missing. You must add it to your AI Studio Secrets.
+          </p>
+        </div>
+        <div className="bg-white p-6 brutal-border text-left space-y-4 shadow-[6px_6px_0px_0px_#1e1e24]">
+          <h4 className="font-black uppercase text-sm border-b-4 border-[#1e1e24] pb-2">How to fix:</h4>
+          <ol className="text-xs font-bold uppercase space-y-3 list-decimal pl-4">
+            <li>Open the <b>Settings</b> menu in AI Studio.</li>
+            <li>Go to <b>Secrets</b>.</li>
+            <li>Add a new secret named <span className="bg-gray-100 px-1">VITE_GOOGLE_MAPS_API_KEY</span>.</li>
+            <li>Paste your Google Maps API key as the value.</li>
+            <li>Refresh this page.</li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
+
   if (authFailure || loadError) {
     return (
       <div className="p-8 sm:p-12 brutal-border bg-[#ff5757] text-white text-center space-y-8 shadow-[8px_8px_0px_0px_#1e1e24] animate-in fade-in zoom-in duration-500">
@@ -366,7 +399,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             <li className="flex items-start gap-3">
               <div className="w-5 h-5 rounded-full bg-red-100 border-2 border-red-600 flex-shrink-0 flex items-center justify-center text-[10px]">2</div>
               <div>
-                <span className="text-red-600 underline">Billing Account:</span> Google Maps <span className="italic">requires</span> a billing account linked to the project (even for the free tier). If billing is not active, the map will fail.
+                <span className="text-red-600 underline">Billing Account:</span> If you see <span className="font-black italic">"For developmental purposes only"</span>, it means billing is not linked. Ensure your project has an active billing account <span className="font-black underline">linked</span> to it in the Google Cloud Console.
               </div>
             </li>
             <li className="flex items-start gap-3">
@@ -631,6 +664,9 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
                     <button onClick={handleLogin} className="w-full brutal-btn bg-[#ffde59] py-2 text-[10px] font-black uppercase flex items-center justify-center gap-2">
                       <LogIn className="w-3 h-3" /> Login with Google
                     </button>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase text-center">
+                      Mobile users: If login fails, try opening in a new tab.
+                    </p>
                   </div>
                 ) : (
                   <form onSubmit={(e) => {
