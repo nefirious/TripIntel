@@ -37,7 +37,7 @@ const INITIAL_FEATURED_DATA = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'travel' | 'business' | 'relief'>('travel');
+  const [activeTab, setActiveTab] = useState<'travel' | 'business'>('travel');
   const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<TravelSnapshot | null>(null);
   const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
@@ -126,12 +126,8 @@ export default function App() {
         description: "Get the real truth about global travel destinations. TripIntel provides unfiltered intelligence on crowds, pricing, and local realities before you book."
       },
       business: {
-        title: "TripIntel Business | Global Market Entry & Business Intelligence for Founders",
+        title: "TripIntel | Global Market Entry & Business Intelligence for Founders",
         description: "Navigate global business markets with real intel. TripIntel provides blunt data on registration hurdles, ownership rules, and commercial market realities."
-      },
-      relief: {
-        title: "TripIntel Relief | Find Public Restrooms & Friendly Businesses Globally",
-        description: "Locate public restrooms, accessible toilets, and baby changing facilities in unfamiliar cities with TripIntel's community-driven Relief Locator."
       }
     };
 
@@ -249,7 +245,7 @@ export default function App() {
 
       {/* Header */}
       <header className="bg-white border-b-4 border-[#1e1e24] py-3 px-4 sm:px-6 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-4 cursor-pointer group" onClick={() => setSnapshot(null)}>
             <div className="relative w-12 h-12 sm:w-16 h-16 flex items-center justify-center">
               {/* Outer Ring */}
@@ -311,32 +307,26 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 sm:p-6 md:p-12 max-w-6xl mx-auto w-full flex flex-col gap-12 sm:gap-16">
+      <main className="flex-1 p-4 sm:p-6 md:p-12 max-w-7xl mx-auto w-full flex flex-col gap-12 sm:gap-16">
         
         {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto">
+        <div className="text-center max-w-5xl mx-auto">
           <div className="inline-block bg-[#ffde59] px-3 sm:px-4 py-1 rounded-full brutal-border mb-4 font-black uppercase tracking-widest text-[10px] sm:text-xs">
             {activeTab === 'travel' 
               ? `Exploring ${DESTINATIONS.length} Global Destinations` 
-              : activeTab === 'business'
-                ? 'Mapping Global Business Markets'
-                : 'Locating Relief Points Globally'}
+              : 'Mapping Global Business Markets'}
           </div>
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 sm:mb-6 leading-[0.9]">
             {activeTab === 'travel' ? (
               <>Know <span className="text-[#ff5757]">Before</span> <br/> You Go</>
-            ) : activeTab === 'business' ? (
-              <>Launch <span className="text-[#ffde59]">With</span> <br/> Real Intel</>
             ) : (
-              <>Relief <span className="text-[#ff5757]">When</span> <br/> You Need It</>
+              <>Launch <span className="text-[#ffde59]">With</span> <br/> Real Intel</>
             )}
           </h2>
           <p className="text-base sm:text-lg md:text-xl font-bold text-gray-600 mb-6 sm:mb-8 px-4">
             {activeTab === 'travel' 
               ? "Unfiltered travel intelligence. Discover the real truth about crowds, pricing, and local realities before you book your next trip."
-              : activeTab === 'business'
-                ? "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."
-                : "Find public restrooms, accessible toilets, and baby changing facilities in unfamiliar cities with our community-driven map."}
+              : "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."}
           </p>
 
           {/* Tab Switcher */}
@@ -363,17 +353,6 @@ export default function App() {
                 <Briefcase className="w-3 h-3 sm:w-4 h-4" />
                 Business
               </button>
-              <button 
-                onClick={() => {
-                  setActiveTab('relief');
-                  setSnapshot(null);
-                  setBusinessSnapshot(null);
-                }}
-                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'relief' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
-              >
-                <MapIcon className="w-3 h-3 sm:w-4 h-4" />
-                Relief
-              </button>
             </div>
           </div>
           
@@ -384,16 +363,14 @@ export default function App() {
 
         {/* Results Section */}
         <div ref={resultsRef} className="scroll-mt-24">
-          {(isLoading || snapshot || businessSnapshot || activeTab === 'relief' || error) && (
+          {(isLoading || snapshot || businessSnapshot || error) && (
             <div className="w-full space-y-8 min-h-[400px]">
             <div className="flex items-center gap-3 justify-center">
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
               <h3 className="font-black uppercase tracking-widest text-xl">
                 {activeTab === 'travel' 
                   ? (isComparing ? 'Comparison View' : 'Your Travel Intel') 
-                  : activeTab === 'business'
-                    ? 'Business Intelligence Report'
-                    : 'Relief Locator'}
+                  : 'Business Intelligence Report'}
               </h3>
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
             </div>
@@ -434,7 +411,7 @@ export default function App() {
                   />
                   
                   {!isComparing && (redditDigest || isRedditLoading) && (
-                    <div className="mt-8">
+                    <div className="mt-8 max-w-5xl mx-auto w-full">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="h-[2px] flex-1 bg-[#1e1e24]"></div>
                         <h4 className="font-black uppercase tracking-widest text-sm">Local Community Digest</h4>
@@ -445,7 +422,7 @@ export default function App() {
                   )}
 
                   {!isComparing && !isLoading && (
-                    <div className="flex justify-center">
+                    <div className="flex justify-center mt-8">
                       <button 
                         onClick={() => setIsComparing(true)}
                         className="brutal-btn bg-[#5ce1e6] px-6 py-2 text-sm uppercase tracking-widest"
@@ -460,12 +437,6 @@ export default function App() {
               {businessSnapshot && activeTab === 'business' && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
                   <BusinessQualityCard snapshot={businessSnapshot} />
-                </div>
-              )}
-
-              {activeTab === 'relief' && (
-                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <ReliefLocator initialCity={currentSearch.destination} />
                 </div>
               )}
 
@@ -511,7 +482,7 @@ export default function App() {
       </div>
 
         {/* Featured Grid */}
-        {!snapshot && !businessSnapshot && activeTab !== 'relief' && !isLoading && (
+        {!snapshot && !businessSnapshot && !isLoading && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
@@ -682,31 +653,23 @@ export default function App() {
             <div className="h-1 flex-1 bg-[#1e1e24]"></div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="brutal-card bg-white p-6 space-y-4">
-              <div className="w-12 h-12 bg-[#ff5757] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
-                <Globe className="w-6 h-6 text-white" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="brutal-card bg-white p-6 space-y-4">
+                <div className="w-12 h-12 bg-[#ff5757] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                  <Globe className="w-6 h-6 text-white" />
+                </div>
+                <h4 className="text-xl font-black uppercase tracking-tight">Unfiltered Travel</h4>
+                <p className="text-sm font-bold opacity-70">Real-time snapshots of global destinations. We track weather, crowds, and local safety advisories to give you the blunt truth before you book.</p>
               </div>
-              <h4 className="text-xl font-black uppercase tracking-tight">Unfiltered Travel</h4>
-              <p className="text-sm font-bold opacity-70">Real-time snapshots of global destinations. We track weather, crowds, and local safety advisories to give you the blunt truth before you book.</p>
-            </div>
-            
-            <div className="brutal-card bg-white p-6 space-y-4">
-              <div className="w-12 h-12 bg-[#5ce1e6] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
-                <MapIcon className="w-6 h-6 text-white" />
+              
+              <div className="brutal-card bg-white p-6 space-y-4">
+                <div className="w-12 h-12 bg-[#ffde59] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                  <TrendingUp className="w-6 h-6 text-[#1e1e24]" />
+                </div>
+                <h4 className="text-xl font-black uppercase tracking-tight">Business Tracker</h4>
+                <p className="text-sm font-bold opacity-70">Real-time market intelligence for founders and investors. Track commercial registration hurdles, ownership rules, and market volatility as they happen for any city in the world.</p>
               </div>
-              <h4 className="text-xl font-black uppercase tracking-tight">Relief Locator</h4>
-              <p className="text-sm font-bold opacity-70">Find public restrooms, accessible toilets, and baby changing facilities in unfamiliar cities with our community-driven map.</p>
             </div>
-            
-            <div className="brutal-card bg-white p-6 space-y-4">
-              <div className="w-12 h-12 bg-[#ffde59] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
-                <TrendingUp className="w-6 h-6 text-[#1e1e24]" />
-              </div>
-              <h4 className="text-xl font-black uppercase tracking-tight">Business Tracker</h4>
-              <p className="text-sm font-bold opacity-70">Real-time market intelligence for founders and investors. Track commercial registration hurdles, ownership rules, and market volatility as they happen for any city in the world.</p>
-            </div>
-          </div>
         </div>
 
         {/* Facebook Page Section */}
@@ -768,7 +731,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-[#1e1e24] text-white py-8 sm:py-12 px-4 sm:px-6 mt-auto">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex flex-col items-center md:items-start gap-2">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 sm:w-10 h-10 bg-[#ffde59] rounded-lg brutal-border flex items-center justify-center shadow-[2px_2px_0px_0px_#1e1e24]">

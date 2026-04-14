@@ -80,7 +80,7 @@ export function SnapshotCard({ snapshot, airportStatus, destination, month, isCo
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`brutal-card flex flex-col w-full ${isCompact ? '' : 'max-w-3xl mx-auto'}`}
+      className={`brutal-card flex flex-col w-full ${isCompact ? '' : 'max-w-5xl mx-auto'}`}
     >
       {/* Header Section */}
       <div className={`${scoreColor} ${isCompact ? 'p-3 sm:p-4' : 'p-4 sm:p-6'} border-b-4 border-[#1e1e24] flex flex-col sm:flex-row items-center justify-between gap-4`}>

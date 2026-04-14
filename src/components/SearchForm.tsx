@@ -72,7 +72,7 @@ export function SearchForm({ onSearch, isLoading, compact = false, mode = 'trave
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`brutal-card ${compact ? 'p-4 bg-white' : 'p-4 sm:p-6 bg-[#ff66c4]'} max-w-4xl mx-auto w-full relative`}>
+    <form onSubmit={handleSubmit} className={`brutal-card ${compact ? 'p-4 bg-white' : 'p-4 sm:p-6 bg-[#ff66c4]'} max-w-5xl mx-auto w-full relative`}>
       <div className={`flex ${compact ? 'flex-col' : 'flex-col md:flex-row'} gap-4`}>
         
         <div className="flex-1 flex flex-col gap-1 relative">

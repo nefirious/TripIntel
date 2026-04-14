@@ -99,7 +99,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
   const [authFailure, setAuthFailure] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const apiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   // Catch Google Maps Auth Failures (the "Oops! Something went wrong" error)
   useEffect(() => {
@@ -235,7 +235,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
       // Map Google Places results to our ReliefLocation format
       const newLocs: ReliefLocation[] = allResults.map((place: google.maps.places.PlaceResult) => {
         // Map Google types to our internal types
-        let type: string = 'business';
+        let type: 'public' | 'business' | 'department_store' | 'cafe' | 'library' | 'gas_station' = 'business';
         if (place.types?.includes('gas_station')) type = 'gas_station';
         else if (place.types?.includes('department_store')) type = 'department_store';
         else if (place.types?.includes('cafe')) type = 'cafe';
@@ -249,7 +249,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
           type: type,
           address: place.vicinity || '',
           addedBy: 'system',
-          isAccessible: place.wheelchair_accessible_entrance || false,
+          isAccessible: !!(place as any).wheelchair_accessible_entrance,
           hasBabyChanging: false, // Places API doesn't reliably provide this
           isGenderNeutral: false  // Places API doesn't reliably provide this
         };
