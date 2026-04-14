@@ -145,42 +145,18 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
     loadLocations();
   }, [loadLocations]);
 
-  const [isLocating, setIsLocating] = useState(false);
-
-  const [locationError, setLocationError] = useState<string | null>(null);
-
-  const findMyLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser");
-      return;
-    }
-
-    setIsLocating(true);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
-        setUserLocation(pos);
-        setMapCenter(pos);
-        setMapZoom(15);
-        setIsLocating(false);
-      },
-      (error) => {
-        console.warn('Geolocation failed:', error);
-        setIsLocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setLocationError("Location access denied. Please enable it in your browser.");
-        } else {
-          setLocationError("Could not find your location. Try again?");
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  }, []);
-
   useEffect(() => {
-    findMyLocation();
-  }, [findMyLocation]);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+          setUserLocation(pos);
+          setMapCenter(pos);
+        },
+        () => console.warn('Geolocation failed')
+      );
+    }
+  }, []);
 
   // Update closest toilet whenever locations or userLocation changes
   useEffect(() => {
@@ -289,11 +265,8 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
         return combined.slice(-50); // Keep last 50 discovered/added locations
       });
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Discovery failed:', err);
-      if (err.message?.includes('LegacyApiNotActivatedMapError') || (err.toString && err.toString().includes('LegacyApiNotActivatedMapError'))) {
-        setAuthFailure(true); // Trigger the checklist if we hit the legacy API error
-      }
     } finally {
       setIsDiscovering(false);
     }
@@ -351,7 +324,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             <li className="flex items-start gap-3">
               <div className="w-5 h-5 rounded-full bg-red-100 border-2 border-red-600 flex-shrink-0 flex items-center justify-center text-[10px]">3</div>
               <div>
-                <span className="text-red-600 underline">Places API (Classic):</span> Ensure the standard <span className="font-black">"Places API"</span> is enabled. Note: This is different from "Places API (New)". You need the classic one for this library.
+                <span className="text-red-600 underline">Places API:</span> Ensure the "Places API" is also enabled in the same project.
               </div>
             </li>
             <li className="flex items-start gap-3">
@@ -487,23 +460,6 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
           )}
 
           {/* Map Overlays */}
-          <AnimatePresence>
-            {locationError && (
-              <motion.div 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="absolute top-20 left-1/2 -translate-x-1/2 z-[1001] bg-[#ff5757] text-white px-4 py-2 brutal-border shadow-xl text-[10px] font-black uppercase flex items-center gap-2"
-              >
-                <AlertTriangle className="w-4 h-4" />
-                {locationError}
-                <button onClick={() => setLocationError(null)} className="ml-2 hover:opacity-70">
-                  <X className="w-3 h-3" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
             <button 
               onClick={handleDiscoverNearby}
@@ -526,12 +482,11 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
 
           <div className="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
             <button 
-              onClick={findMyLocation}
-              disabled={isLocating}
-              className={`p-3 brutal-border shadow-lg transition-all ${isLocating ? 'bg-[#5ce1e6] animate-pulse' : 'bg-white hover:bg-gray-50'}`}
+              onClick={() => userLocation && setMapCenter(userLocation)}
+              className="bg-white p-3 brutal-border hover:bg-gray-50 shadow-lg"
               title="Find my location"
             >
-              <Navigation className={`w-5 h-5 ${isLocating ? 'animate-spin' : ''}`} />
+              <Navigation className="w-5 h-5" />
             </button>
             <button 
               onClick={() => {
