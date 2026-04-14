@@ -37,7 +37,7 @@ const INITIAL_FEATURED_DATA = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'travel' | 'business'>('travel');
+  const [activeTab, setActiveTab] = useState<'travel' | 'business' | 'relief'>('travel');
   const [user, setUser] = useState<User | null>(null);
   const [snapshot, setSnapshot] = useState<TravelSnapshot | null>(null);
   const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
@@ -128,6 +128,10 @@ export default function App() {
       business: {
         title: "TripIntel | Global Market Entry & Business Intelligence for Founders",
         description: "Navigate global business markets with real intel. TripIntel provides blunt data on registration hurdles, ownership rules, and commercial market realities."
+      },
+      relief: {
+        title: "TripIntel | Relief Map - Public Toilet Locator & Community Map",
+        description: "Find the closest public restrooms, cafes, and libraries. Community-powered map for toilet relief, accessibility, and family-friendly facilities."
       }
     };
 
@@ -319,14 +323,18 @@ export default function App() {
           <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter mb-4 sm:mb-6 leading-[0.9]">
             {activeTab === 'travel' ? (
               <>Know <span className="text-[#ff5757]">Before</span> <br/> You Go</>
-            ) : (
+            ) : activeTab === 'business' ? (
               <>Launch <span className="text-[#ffde59]">With</span> <br/> Real Intel</>
+            ) : (
+              <>Find <span className="text-[#5ce1e6]">Relief</span> <br/> Anywhere</>
             )}
           </h2>
           <p className="text-base sm:text-lg md:text-xl font-bold text-gray-600 mb-6 sm:mb-8 px-4">
             {activeTab === 'travel' 
               ? "Unfiltered travel intelligence. Discover the real truth about crowds, pricing, and local realities before you book your next trip."
-              : "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."}
+              : activeTab === 'business'
+              ? "Blunt business intelligence for global founders. Navigate registration hurdles, ownership rules, and commercial market realities."
+              : "The community-powered public toilet locator. Find verified restrooms, cafes, and libraries with accessibility and family-friendly data."}
           </p>
 
           {/* Tab Switcher */}
@@ -353,6 +361,16 @@ export default function App() {
                 <Briefcase className="w-3 h-3 sm:w-4 h-4" />
                 Business
               </button>
+              <button 
+                onClick={() => {
+                  setActiveTab('relief');
+                  setSnapshot(null);
+                }}
+                className={`px-4 sm:px-6 py-2 rounded-lg font-black uppercase tracking-widest text-[10px] sm:text-xs flex items-center gap-2 transition-all ${activeTab === 'relief' ? 'bg-[#ffde59] text-[#1e1e24] shadow-[2px_2px_0px_0px_#1e1e24]' : 'text-gray-500 hover:text-black'}`}
+              >
+                <MapIcon className="w-3 h-3 sm:w-4 h-4" />
+                Relief Map
+              </button>
             </div>
           </div>
           
@@ -363,14 +381,16 @@ export default function App() {
 
         {/* Results Section */}
         <div ref={resultsRef} className="scroll-mt-24">
-          {(isLoading || snapshot || businessSnapshot || error) && (
+          {(isLoading || snapshot || businessSnapshot || error || activeTab === 'relief') && (
             <div className="w-full space-y-8 min-h-[400px]">
             <div className="flex items-center gap-3 justify-center">
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
               <h3 className="font-black uppercase tracking-widest text-xl">
                 {activeTab === 'travel' 
                   ? (isComparing ? 'Comparison View' : 'Your Travel Intel') 
-                  : 'Business Intelligence Report'}
+                  : activeTab === 'business'
+                  ? 'Business Intelligence Report'
+                  : 'Relief Map'}
               </h3>
               <div className="h-1 flex-1 bg-[#1e1e24]"></div>
             </div>
@@ -400,6 +420,12 @@ export default function App() {
             )}
 
             <div className={`grid grid-cols-1 ${isComparing && activeTab === 'travel' ? 'lg:grid-cols-2' : ''} gap-8`}>
+              {activeTab === 'relief' && (
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <ReliefLocator />
+                </div>
+              )}
+
               {snapshot && activeTab === 'travel' && (
                 <div className="space-y-4">
                   <SnapshotCard 
@@ -482,7 +508,7 @@ export default function App() {
       </div>
 
         {/* Featured Grid */}
-        {!snapshot && !businessSnapshot && !isLoading && (
+        {activeTab !== 'relief' && !snapshot && !businessSnapshot && !isLoading && (
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <h3 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3">
@@ -653,7 +679,7 @@ export default function App() {
             <div className="h-1 flex-1 bg-[#1e1e24]"></div>
           </div>
           
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="brutal-card bg-white p-6 space-y-4">
                 <div className="w-12 h-12 bg-[#ff5757] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
                   <Globe className="w-6 h-6 text-white" />
@@ -668,6 +694,14 @@ export default function App() {
                 </div>
                 <h4 className="text-xl font-black uppercase tracking-tight">Business Tracker</h4>
                 <p className="text-sm font-bold opacity-70">Real-time market intelligence for founders and investors. Track commercial registration hurdles, ownership rules, and market volatility as they happen for any city in the world.</p>
+              </div>
+
+              <div className="brutal-card bg-white p-6 space-y-4">
+                <div className="w-12 h-12 bg-[#5ce1e6] rounded-lg brutal-border flex items-center justify-center shadow-[4px_4px_0px_0px_#000]">
+                  <MapIcon className="w-6 h-6 text-[#1e1e24]" />
+                </div>
+                <h4 className="text-xl font-black uppercase tracking-tight">Relief Locator</h4>
+                <p className="text-sm font-bold opacity-70">Community-powered map for finding public restrooms, cafes, and libraries. Filter by accessibility, gender neutrality, and family-friendly features.</p>
               </div>
             </div>
         </div>

@@ -217,7 +217,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
         return new Promise<google.maps.places.PlaceResult[]>((resolve) => {
           service.nearbySearch({
             location: center,
-            radius: 2000, // 2km radius
+            radius: 3000, // 3km radius
             type: type as any
           }, (results, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && results) {
@@ -289,6 +289,31 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
       anchor: new window.google.maps.Point(16, 16),
     };
   }, [isLoaded]);
+
+  if (!apiKey) {
+    return (
+      <div className="p-8 sm:p-12 brutal-border bg-[#ffde59] text-[#1e1e24] text-center space-y-6 shadow-[8px_8px_0px_0px_#1e1e24]">
+        <div className="w-20 h-20 bg-white brutal-border mx-auto flex items-center justify-center -rotate-3 shadow-[4px_4px_0px_0px_#1e1e24]">
+          <MapIcon className="w-10 h-10" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-2xl font-black uppercase tracking-tighter">API Key Required</h3>
+          <p className="font-bold text-xs uppercase opacity-80 max-w-md mx-auto">
+            To use the Relief Map, you must add your Google Maps API key to the <span className="underline">Secrets</span> panel in AI Studio.
+          </p>
+        </div>
+        <div className="bg-white p-4 brutal-border text-left space-y-3 shadow-[4px_4px_0px_0px_#1e1e24]">
+          <p className="text-[10px] font-black uppercase border-b-2 border-[#1e1e24] pb-1">How to fix:</p>
+          <ol className="text-[9px] font-bold uppercase space-y-2 list-decimal pl-4">
+            <li>Open the <strong>Settings</strong> (gear icon) in AI Studio.</li>
+            <li>Go to the <strong>Secrets</strong> tab.</li>
+            <li>Add a new secret named: <code className="bg-gray-100 px-1">VITE_GOOGLE_MAPS_API_KEY</code></li>
+            <li>Paste your key: <code className="bg-gray-100 px-1">AIzaSyA28...</code></li>
+          </ol>
+        </div>
+      </div>
+    );
+  }
 
   if (authFailure || loadError) {
     return (
@@ -362,8 +387,8 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             <MapIcon className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="font-black uppercase text-xl leading-none">Relief Locator</h2>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Community-Powered Restroom Map</p>
+            <h2 className="font-black uppercase text-xl leading-none">Relief Map</h2>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Public Toilet Locator & Community Map</p>
           </div>
         </div>
         
@@ -460,7 +485,7 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
           )}
 
           {/* Map Overlays */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-2">
             <button 
               onClick={handleDiscoverNearby}
               disabled={isDiscovering}
@@ -469,15 +494,18 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
               {isDiscovering ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Scanning Area...
+                  Scanning...
                 </>
               ) : (
                 <>
                   <Search className="w-4 h-4" />
-                  Scan Area for Toilets
+                  Scan for Toilets
                 </>
               )}
             </button>
+            <div className="bg-white/90 backdrop-blur px-3 py-1 brutal-border text-[8px] font-black uppercase tracking-tighter">
+              Searching: Gas Stations, Cafes, Libraries, Stores
+            </div>
           </div>
 
           <div className="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
@@ -488,6 +516,19 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
             >
               <Navigation className="w-5 h-5" />
             </button>
+            {closestToilet && (
+              <button 
+                onClick={() => {
+                  setMapCenter({ lat: closestToilet.lat, lng: closestToilet.lng });
+                  setMapZoom(18);
+                  setSelectedLocation(closestToilet);
+                }}
+                className="bg-[#7ed957] p-3 brutal-border hover:bg-green-400 shadow-lg"
+                title="Go to closest toilet"
+              >
+                <MapPin className="w-5 h-5 text-white" />
+              </button>
+            )}
             <button 
               onClick={() => {
                 setIsAdding(!isAdding);
@@ -556,13 +597,13 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
                     </select>
                     <div className="flex flex-wrap gap-2">
                       <label className="flex items-center gap-1 text-[8px] font-black uppercase cursor-pointer">
-                        <input type="checkbox" name="isAccessible" className="w-3 h-3 brutal-border" /> ADA
+                        <input type="checkbox" name="isAccessible" className="w-3 h-3 brutal-border" /> Wheelchair Friendly
                       </label>
                       <label className="flex items-center gap-1 text-[8px] font-black uppercase cursor-pointer">
-                        <input type="checkbox" name="hasBabyChanging" className="w-3 h-3 brutal-border" /> Baby
+                        <input type="checkbox" name="hasBabyChanging" className="w-3 h-3 brutal-border" /> Family Friendly
                       </label>
                       <label className="flex items-center gap-1 text-[8px] font-black uppercase cursor-pointer">
-                        <input type="checkbox" name="isGenderNeutral" className="w-3 h-3 brutal-border" /> Neutral
+                        <input type="checkbox" name="isGenderNeutral" className="w-3 h-3 brutal-border" /> Gender Neutral
                       </label>
                     </div>
                     <button type="submit" className="w-full brutal-btn bg-[#ffde59] py-2 text-xs font-black uppercase">Save Pin</button>
