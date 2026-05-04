@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { withRetry } from "../lib/api";
+import { cache } from "../lib/cache";
 
 export interface BusinessSnapshot {
   city: string;
@@ -22,6 +23,10 @@ export interface BusinessSnapshot {
 }
 
 export async function getBusinessSnapshot(city: string): Promise<BusinessSnapshot> {
+  const cacheKey = `business_${city}`.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const cached = cache.get<BusinessSnapshot>(cacheKey);
+  if (cached) return cached;
+
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
@@ -86,6 +91,10 @@ export async function getBusinessSnapshot(city: string): Promise<BusinessSnapsho
       }
     });
 
-    return JSON.parse(response.text);
+    const text = response.text;
+    if (!text) throw new Error("Empty response from AI model.");
+    const data = JSON.parse(text);
+    cache.set(cacheKey, data, 1000 * 60 * 60 * 24 * 7); // Business data doesn't change fast. 7 days.
+    return data;
   });
 }

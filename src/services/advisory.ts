@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { withRetry } from "../lib/api";
+import { cache } from "../lib/cache";
 
 export interface TravelAdvisory {
   location: string;
@@ -9,6 +10,10 @@ export interface TravelAdvisory {
 }
 
 export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
+  const cacheKey = 'global_advisories';
+  const cached = cache.get<TravelAdvisory[]>(cacheKey);
+  if (cached) return cached;
+
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
 
   const ai = new GoogleGenAI({ apiKey });
@@ -51,7 +56,9 @@ export async function getLiveAdvisories(): Promise<TravelAdvisory[]> {
 
       const text = response.text;
       if (!text) throw new Error("Empty response from model");
-      return JSON.parse(text);
+      const data = JSON.parse(text);
+      cache.set(cacheKey, data, 1000 * 60 * 60 * 2); // Cache for 2 hours
+      return data;
     });
   } catch (err: any) {
     console.error("Failed to fetch advisories after retries:", err);

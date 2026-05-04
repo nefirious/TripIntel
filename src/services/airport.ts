@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { withRetry } from "../lib/api";
+import { cache } from "../lib/cache";
 
 export interface AirportStatus {
   airportName: string;
@@ -11,6 +12,10 @@ export interface AirportStatus {
 }
 
 export async function getAirportStatus(destination: string): Promise<AirportStatus> {
+  const cacheKey = `airport_${destination}`.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const cached = cache.get<AirportStatus>(cacheKey);
+  if (cached) return cached;
+
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
@@ -53,6 +58,8 @@ export async function getAirportStatus(destination: string): Promise<AirportStat
 
     const text = response.text;
     if (!text) throw new Error("Empty response from AI model.");
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    cache.set(cacheKey, data, 1000 * 60 * 60 * 2); // Airport status changes. Cache for 2 hours.
+    return data;
   });
 }

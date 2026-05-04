@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { withRetry } from "../lib/api";
+import { cache } from "../lib/cache";
 
 export interface TravelSnapshot {
   score: number;
@@ -70,24 +71,15 @@ export interface TravelSnapshot {
   };
 }
 
-export interface RedditItem {
-  type: 'tip' | 'complaint' | 'gem';
-  label: string;
-  content: string;
-  upvotes: number;
-}
-
-export interface RedditDigest {
-  subreddit: string;
-  postsScanned: number;
-  items: RedditItem[];
-}
-
 export async function getTravelSnapshot(
   destination: string,
   month: string,
   activity: string = 'General'
 ): Promise<TravelSnapshot> {
+  const cacheKey = `snapshot_${destination}_${month}_${activity}`.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const cached = cache.get<TravelSnapshot>(cacheKey);
+  if (cached) return cached;
+
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   
   const ai = new GoogleGenAI({ apiKey });
@@ -296,11 +288,17 @@ export async function getTravelSnapshot(
 
     const text = response.text;
     if (!text) throw new Error("Empty response from AI model.");
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    cache.set(cacheKey, data, 1000 * 60 * 60 * 24); // Cache for 24 hours
+    return data;
   });
 }
 
 export async function searchRestrooms(location: string): Promise<any[]> {
+  const cacheKey = `restrooms_search_${location}`.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const cached = cache.get<any[]>(cacheKey);
+  if (cached) return cached;
+
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
@@ -353,11 +351,17 @@ export async function searchRestrooms(location: string): Promise<any[]> {
 
     const text = response.text;
     if (!text) throw new Error("Empty response from AI model.");
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    cache.set(cacheKey, data, 1000 * 60 * 60 * 6); // Cache for 6 hours
+    return data;
   });
 }
 
 export async function discoverNearbyRestrooms(lat: number, lng: number): Promise<any[]> {
+  const cacheKey = `restrooms_nearby_${lat.toFixed(4)}_${lng.toFixed(4)}`;
+  const cached = cache.get<any[]>(cacheKey);
+  if (cached) return cached;
+
   const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
@@ -410,73 +414,8 @@ export async function discoverNearbyRestrooms(lat: number, lng: number): Promise
 
     const text = response.text;
     if (!text) throw new Error("Empty response from AI model.");
-    return JSON.parse(text);
-  });
-}
-
-export async function summarizeRedditDigest(city: string): Promise<RedditDigest> {
-  const apiKey = process.env.GEMINI_API_KEY || (import.meta as any).env.VITE_GEMINI_API_KEY;
-  const ai = new GoogleGenAI({ apiKey });
-
-  const prompt = `Search Reddit for the top posts from the last 7 days in the most relevant subreddit for the city of ${city} (e.g., r/Munich for Munich, r/London for London).
-    
-    Scan approximately 50-100 posts and identify:
-    1. A "Biergarten tip" or "Local tip" of the week (something practical and timely).
-    2. A "Current complaint" (something locals are annoyed about right now, e.g., construction, transport delays, events).
-    3. A "Hidden gem" or "Local recommendation" of the week.
-
-    For each item, provide:
-    - type: "tip", "complaint", or "gem".
-    - label: A short title (e.g., "Biergarten tip this week", "Current complaint", "Hidden gem this week").
-    - content: A concise summary of the advice or complaint, ideally including a "locals say" or "reports suggest" vibe.
-    - upvotes: The approximate number of upvotes the original post had.
-
-    Return the data in JSON format.
-    
-    CRITICAL: Use Google Search to find ACTUAL recent posts from the last 7 days. Do not hallucinate. If you cannot find specific recent posts, find the most recent relevant ones from the last month and adjust the "postsScanned" and "subreddit" fields accordingly.
-    
-    Response format:
-    {
-      "subreddit": "r/CityName",
-      "postsScanned": number,
-      "items": [
-        { "type": "tip" | "complaint" | "gem", "label": string, "content": string, "upvotes": number }
-      ]
-    }`;
-
-  return withRetry(async () => {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            subreddit: { type: Type.STRING },
-            postsScanned: { type: Type.NUMBER },
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  type: { type: Type.STRING, enum: ["tip", "complaint", "gem"] },
-                  label: { type: Type.STRING },
-                  content: { type: Type.STRING },
-                  upvotes: { type: Type.NUMBER },
-                },
-                required: ["type", "label", "content", "upvotes"]
-              }
-            }
-          },
-          required: ["subreddit", "postsScanned", "items"]
-        }
-      }
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("Empty response from AI model.");
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    cache.set(cacheKey, data, 1000 * 60 * 60 * 6); // Cache for 6 hours
+    return data;
   });
 }

@@ -4,37 +4,38 @@ import { SnapshotCard } from './components/SnapshotCard';
 import { CityCard } from './components/CityCard';
 import { LegalModal } from './components/LegalModal';
 import { BusinessQualityCard } from './components/BusinessQualityCard';
-import { getTravelSnapshot, TravelSnapshot, RedditDigest } from './services/gemini';
+import { getTravelSnapshot, TravelSnapshot } from './services/gemini';
 import { getAirportStatus, AirportStatus } from './services/airport';
 import { getLiveAdvisories, TravelAdvisory } from './services/advisory';
 import { getBusinessSnapshot, BusinessSnapshot } from './services/business';
-import { getRedditDigest } from './services/reddit';
-import { RedditDigestCard } from './components/RedditDigestCard';
 import { ReliefLocator } from './components/ReliefLocator';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { MapPin, Sparkles, Activity, Globe, Pin, Megaphone, Loader2, Compass, Share2, Check, Plane, TrendingUp, Briefcase, Map as MapIcon, AlertTriangle, LogIn, LogOut, User as UserIcon } from 'lucide-react';
 import { MONTHS, DESTINATIONS } from './constants';
 
 const FEATURED_CITIES = [
-  "Kyoto, Japan",
-  "Rome, Italy",
-  "Amsterdam, Netherlands",
-  "Washington DC, USA",
-  "Seville, Spain",
-  "Cancun, Mexico"
+  "Santorini, Greece",
+  "Amalfi Coast, Italy",
+  "Prague, Czech Republic",
+  "New York City, USA",
+  "Budapest, Hungary",
+  "Kyoto, Japan"
 ];
 
 // Mock data for initial featured cards to avoid massive API calls on load
 // In a real app, these would be cached or pre-generated
 const INITIAL_FEATURED_DATA = [
-  { city: "Kyoto, Japan", score: 9.8, weatherIcon: 'sun' as const, temperature: "18°C" },
-  { city: "Rome, Italy", score: 9.5, weatherIcon: 'sun' as const, temperature: "19°C" },
-  { city: "Amsterdam, Netherlands", score: 9.7, weatherIcon: 'sun' as const, temperature: "14°C" },
-  { city: "Washington DC, USA", score: 9.4, weatherIcon: 'sun' as const, temperature: "17°C" },
-  { city: "Seville, Spain", score: 9.8, weatherIcon: 'sun' as const, temperature: "24°C" },
-  { city: "Cancun, Mexico", score: 9.2, weatherIcon: 'sun' as const, temperature: "29°C" },
+  { city: "Santorini, Greece", score: 9.9, weatherIcon: 'sun' as const, temperature: "22°C" },
+  { city: "Amalfi Coast, Italy", score: 9.8, weatherIcon: 'sun' as const, temperature: "21°C" },
+  { city: "Prague, Czech Republic", score: 9.6, weatherIcon: 'cloud' as const, temperature: "18°C" },
+  { city: "New York City, USA", score: 9.5, weatherIcon: 'sun' as const, temperature: "19°C" },
+  { city: "Budapest, Hungary", score: 9.4, weatherIcon: 'sun' as const, temperature: "20°C" },
+  { city: "Kyoto, Japan", score: 9.7, weatherIcon: 'sun' as const, temperature: "23°C" },
 ];
+
+const G_MAPS_LIBRARIES: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'travel' | 'business' | 'relief'>('travel');
@@ -42,11 +43,9 @@ export default function App() {
   const [snapshot, setSnapshot] = useState<TravelSnapshot | null>(null);
   const [airportStatus, setAirportStatus] = useState<AirportStatus | null>(null);
   const [businessSnapshot, setBusinessSnapshot] = useState<BusinessSnapshot | null>(null);
-  const [redditDigest, setRedditDigest] = useState<RedditDigest | null>(null);
   const [comparisonSnapshot, setComparisonSnapshot] = useState<TravelSnapshot | null>(null);
   const [comparisonAirportStatus, setComparisonAirportStatus] = useState<AirportStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRedditLoading, setIsRedditLoading] = useState(false);
   const [isComparing, setIsComparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentSearch, setCurrentSearch] = useState({ destination: '', month: '' });
@@ -60,6 +59,14 @@ export default function App() {
   const [isAdvisoriesLoading, setIsAdvisoriesLoading] = useState(true);
   const [showCopied, setShowCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  const gMapsApiKey = (import.meta as any).env.VITE_GOOGLE_MAPS_API_KEY || '';
+  const { isLoaded: isGMapsLoaded, loadError: gMapsLoadError } = useJsApiLoader({
+    id: 'tripintel-global-maps-loader',
+    googleMapsApiKey: gMapsApiKey,
+    version: 'weekly',
+    libraries: G_MAPS_LIBRARIES
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -155,7 +162,7 @@ export default function App() {
     updateMeta('twitter:description', currentMeta.description);
   }, [activeTab]);
   
-  const currentMonth = "April";
+  const currentMonth = "May";
 
   const handleShare = async () => {
     const shareData = {
@@ -192,8 +199,6 @@ export default function App() {
       setSnapshot(null);
       setAirportStatus(null);
       setBusinessSnapshot(null);
-      setRedditDigest(null);
-      setIsRedditLoading(true);
       setCurrentSearch({ destination, month });
     } else {
       setComparisonSearch({ destination, month });
@@ -206,10 +211,9 @@ export default function App() {
 
     try {
       if (activeTab === 'travel') {
-        const [snapshotData, airportData, redditData] = await Promise.all([
+        const [snapshotData, airportData] = await Promise.all([
           getTravelSnapshot(destination, month, activity),
-          getAirportStatus(destination),
-          !isSecondCity ? getRedditDigest(destination) : Promise.resolve(null)
+          getAirportStatus(destination)
         ]);
 
         if (isSecondCity) {
@@ -218,7 +222,6 @@ export default function App() {
         } else {
           setSnapshot(snapshotData);
           setAirportStatus(airportData);
-          setRedditDigest(redditData);
         }
       } else if (activeTab === 'business') {
         const businessData = await getBusinessSnapshot(destination);
@@ -234,7 +237,6 @@ export default function App() {
       }
     } finally {
       setIsLoading(false);
-      setIsRedditLoading(false);
     }
   };
 
@@ -422,7 +424,7 @@ export default function App() {
             <div className={`grid grid-cols-1 ${isComparing && activeTab === 'travel' ? 'lg:grid-cols-2' : ''} gap-8`}>
               {activeTab === 'relief' && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                  <ReliefLocator />
+                  <ReliefLocator isLoaded={isGMapsLoaded} loadError={gMapsLoadError} />
                 </div>
               )}
 
@@ -435,17 +437,6 @@ export default function App() {
                     month={currentSearch.month}
                     isCompact={isComparing}
                   />
-                  
-                  {!isComparing && (redditDigest || isRedditLoading) && (
-                    <div className="mt-8 max-w-5xl mx-auto w-full">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="h-[2px] flex-1 bg-[#1e1e24]"></div>
-                        <h4 className="font-black uppercase tracking-widest text-sm">Local Community Digest</h4>
-                        <div className="h-[2px] flex-1 bg-[#1e1e24]"></div>
-                      </div>
-                      <RedditDigestCard digest={redditDigest!} isLoading={isRedditLoading} />
-                    </div>
-                  )}
 
                   {!isComparing && !isLoading && (
                     <div className="flex justify-center mt-8">

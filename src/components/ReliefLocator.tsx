@@ -28,8 +28,6 @@ import { ReliefLocation, getReliefLocations, addReliefLocation, calculateDistanc
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 
-const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
-
 const mapContainerStyle = {
   width: '100%',
   height: '100%'
@@ -83,9 +81,11 @@ const getUserMarkerSvg = () => `data:image/svg+xml;charset=UTF-8,${encodeURIComp
 
 interface ReliefLocatorProps {
   initialCity?: string;
+  isLoaded: boolean;
+  loadError: Error | undefined;
 }
 
-export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => {
+export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity, isLoaded, loadError }) => {
   const [user, setUser] = useState<User | null>(auth.currentUser);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [mapCenter, setMapCenter] = useState<google.maps.LatLngLiteral>({ lat: 48.1351, lng: 11.5820 }); // Munich default
@@ -111,12 +111,6 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
     };
   }, []);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: apiKey || '',
-    libraries
-  });
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -135,13 +129,36 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
   const loadLocations = useCallback(async () => {
     try {
       const data = await getReliefLocations();
-      setLocations(data);
+      setLocations(prev => {
+        const firestoreIds = new Set(data.map(l => l.id));
+        // Keep existing locations that are NOT from Firestore (system discovered)
+        const systemLocs = prev.filter(l => l.addedBy === 'system' && !firestoreIds.has(l.id));
+        return [...data, ...systemLocs];
+      });
     } catch (err) {
       console.error('Error loading locations:', err);
     }
   }, []);
 
   useEffect(() => {
+    // Load discovered locations from cache on mount
+    const cachedLocs = localStorage.getItem('tripintel_discovered_toilets');
+    if (cachedLocs) {
+      try {
+        const parsed: ReliefLocation[] = JSON.parse(cachedLocs);
+        setLocations(prev => {
+          const combined = [...prev, ...parsed];
+          const seen = new Set();
+          return combined.filter(l => {
+            if (!l.id || seen.has(l.id)) return false;
+            seen.add(l.id);
+            return true;
+          });
+        });
+      } catch (e) {
+        console.warn('Failed to load cached toilets');
+      }
+    }
     loadLocations();
   }, [loadLocations]);
 
@@ -230,10 +247,15 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
       });
 
       const resultsArray = await Promise.all(searchPromises);
-      resultsArray.forEach(results => allResults.push(...results));
-
+      
       // Map Google Places results to our ReliefLocation format
-      const newLocs: ReliefLocation[] = allResults.map((place: google.maps.places.PlaceResult) => {
+      const uniquePlaceIds = new Set();
+      const newLocs: ReliefLocation[] = [];
+      
+      resultsArray.flat().forEach((place: google.maps.places.PlaceResult) => {
+        if (!place.place_id || uniquePlaceIds.has(place.place_id)) return;
+        uniquePlaceIds.add(place.place_id);
+
         // Map Google types to our internal types
         let type: 'public' | 'business' | 'department_store' | 'cafe' | 'library' | 'gas_station' = 'business';
         if (place.types?.includes('gas_station')) type = 'gas_station';
@@ -241,8 +263,8 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
         else if (place.types?.includes('cafe')) type = 'cafe';
         else if (place.types?.includes('library')) type = 'library';
 
-        return {
-          id: place.place_id || `temp-${Date.now()}-${Math.random()}`,
+        newLocs.push({
+          id: place.place_id,
           name: place.name || 'Unknown Place',
           lat: place.geometry?.location?.lat() || 0,
           lng: place.geometry?.location?.lng() || 0,
@@ -252,17 +274,30 @@ export const ReliefLocator: React.FC<ReliefLocatorProps> = ({ initialCity }) => 
           isAccessible: !!(place as any).wheelchair_accessible_entrance,
           hasBabyChanging: false, // Places API doesn't reliably provide this
           isGenderNeutral: false  // Places API doesn't reliably provide this
-        };
+        });
       });
 
       // Filter out duplicates and items with invalid coordinates
       setLocations(prev => {
-        const existingIds = new Set(prev.map(l => l.id));
-        const uniqueNew = newLocs.filter(l => l.lat !== 0 && !existingIds.has(l.id));
+        const combined = [...prev, ...newLocs];
+        const seen = new Set();
+        const deduped = combined.filter(l => {
+          if (!l.id || l.lat === 0 || l.lng === 0 || seen.has(l.id)) return false;
+          seen.add(l.id);
+          return true;
+        });
         
-        // Limit to top 30 results to keep map clean
-        const combined = [...prev, ...uniqueNew];
-        return combined.slice(-50); // Keep last 50 discovered/added locations
+        const limited = deduped.slice(-150); // Keep last 150 locations
+        
+        // Cache discovered locations (only system ones, others come from loadLocations/Firestore)
+        try {
+          const systemLocs = limited.filter(l => l.addedBy === 'system');
+          localStorage.setItem('tripintel_discovered_toilets', JSON.stringify(systemLocs));
+        } catch (e) {
+          console.warn('Cache write failed');
+        }
+        
+        return limited;
       });
 
     } catch (err) {
